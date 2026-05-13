@@ -178,11 +178,11 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
   const winner = finalMatch?.winnerId ? athleteMap[finalMatch.winnerId] : null;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#e8f0fe', fontFamily: 'Arial, sans-serif' }}>
       {/* Toolbar */}
-      <div style={{ background: '#111', borderBottom: '1px solid #222', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ background: '#dce6fd', borderBottom: '1px solid #b8ccf8', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <Link href={`/admin/events/${eventId}`} style={{ color: '#0066cc', fontSize: 13, textDecoration: 'none' }}>← Event</Link>
-        <span style={{ color: '#f5f5f5', fontSize: 13, fontWeight: 700, flex: 1 }}>{category.name}</span>
+        <span style={{ color: '#1a1a4e', fontSize: 13, fontWeight: 700, flex: 1 }}>{category.name}</span>
         <span style={{ color: '#555', fontSize: 12 }}>{initialAthletes.length} athletes · {size}-bracket</span>
         {saving && <span style={{ color: '#888', fontSize: 12 }}>Saving…</span>}
         {saved && <span style={{ color: '#22c55e', fontSize: 12 }}>✓ Saved</span>}
@@ -202,18 +202,18 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
       {/* SEED PHASE */}
       {phase === 'seed' && (
         <div style={{ display: 'flex', height: 'calc(100vh - 52px)' }}>
-          <div style={{ width: 260, background: '#141414', borderRight: '1px solid #222', padding: '12px 10px', overflowY: 'auto' }}>
-            <div style={{ color: '#555', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>↕ Drag to reorder</div>
+          <div style={{ width: 260, background: '#dce6fd', borderRight: '1px solid #b8ccf8', padding: '12px 10px', overflowY: 'auto' }}>
+            <div style={{ color: '#4455aa', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>↕ Drag to reorder</div>
             {seeds.map((a, i) => (
               <div key={i} draggable={!!a}
                 onDragStart={() => a && setDragFrom(i)}
                 onDragOver={e => e.preventDefault()}
                 onDrop={() => { if (dragFrom !== null && dragFrom !== i) { const s = [...seeds]; [s[dragFrom], s[i]] = [s[i], s[dragFrom]]; setSeeds(s); } setDragFrom(null); }}
-                style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 4, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, cursor: a ? 'grab' : 'default', marginBottom: 2, opacity: a ? 1 : 0.3 }}
+                style={{ background: '#d0dcfb', border: '1px solid rgba(0,0,80,0.08)', borderRadius: 4, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, cursor: a ? 'grab' : 'default', marginBottom: 2, opacity: a ? 1 : 0.3 }}
               >
                 <span style={{ color: '#444', fontSize: 10, fontWeight: 700, minWidth: 20 }}>{i + 1}</span>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ color: a ? '#f5f5f5' : '#333', fontSize: 11, fontWeight: a ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a ? `${a.first_name} ${a.surname}` : 'BYE'}</div>
+                  <div style={{ color: a ? '#1a1a4e' : '#555', fontSize: 11, fontWeight: a ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a ? `${a.first_name} ${a.surname}` : 'BYE'}</div>
                   {a && <div style={{ color: '#555', fontSize: 9 }}>{a.club}</div>}
                 </div>
               </div>
@@ -221,12 +221,12 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
             <button onClick={startBracket} style={{ marginTop: 10, width: '100%', background: '#22c55e', color: '#000', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>▶ Confirm & Start</button>
           </div>
           <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
-            <p style={{ color: '#555', fontSize: 13, marginBottom: 16 }}>Drag names on the left to adjust seeding, then click <strong style={{ color: '#f5f5f5' }}>Start Bracket</strong>.</p>
+            <p style={{ color: '#555', fontSize: 13, marginBottom: 16 }}>Drag names on the left to adjust seeding, then click <strong style={{ color: '#1a1a4e' }}>Start Bracket</strong>.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 4 }}>
               {seeds.map((a, i) => (
-                <div key={i} style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 4, padding: '5px 10px', display: 'flex', gap: 8, opacity: a ? 1 : 0.3 }}>
+                <div key={i} style={{ background: '#dce6fd', border: '1px solid rgba(0,0,100,0.08)', borderRadius: 4, padding: '5px 10px', display: 'flex', gap: 8, opacity: a ? 1 : 0.3 }}>
                   <span style={{ color: '#444', fontSize: 10, fontWeight: 700, minWidth: 22 }}>#{i + 1}</span>
-                  <span style={{ color: a ? '#f5f5f5' : '#333', fontSize: 11, fontWeight: a ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a ? `${a.first_name} ${a.surname}` : 'BYE'}</span>
+                  <span style={{ color: a ? '#1a1a4e' : '#555', fontSize: 11, fontWeight: a ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a ? `${a.first_name} ${a.surname}` : 'BYE'}</span>
                 </div>
               ))}
             </div>
