@@ -80,7 +80,11 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       const isLast = r === rounds - 1;
       const label = r === rounds - 1 ? 'Final' : r === rounds - 2 ? 'Semi-Final' : r === rounds - 3 ? 'Quarter-Final' : `Round ${r + 1}`;
 
+      // Athlete column HTML
       let matchesHTML = '';
+      // Gap column connector lines HTML (horizontal lines at midY of each match)
+      let gapHTML = '';
+
       for (let mi = 0; mi < mc; mi++) {
         const mt = mi * mh;
         const topY = mt + pad;
@@ -114,39 +118,45 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
         const seqTop = r === 0 ? mi * 2 + 1 : 0;
         const seqBot = r === 0 ? mi * 2 + 2 : 0;
-        const isBye = (topName === '' && botName !== '') || (topName !== '' && botName === '');
 
         matchesHTML += `
-          <div style="position:absolute;top:${mt}px;left:0;right:0;height:${mh}px">
-            <!-- TOP ATHLETE — AKA (light red tint, dark text) -->
-            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;padding-left:0;gap:0;background:${topW ? '#e8f5e9' : topL ? '#f5f5f5' : topName ? '#ffe8e8' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${topW ? '#2e7d32' : topL ? '#bbb' : '#cc0000'};overflow:hidden">
+          <div style="position:absolute;top:${mt}px;left:0;right:0;height:${mh}px;overflow:visible">
+            <!-- AKA top slot -->
+            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:${topW ? '#e8f5e9' : topL ? '#f5f5f5' : topName ? '#ffe8e8' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${topW ? '#2e7d32' : topL ? '#bbb' : '#cc0000'};overflow:hidden">
               ${seqTop ? `<span style="font-size:8px;color:#888;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqTop}</span>` : ''}
               <span style="width:1px;height:100%;background:#ddd;flex-shrink:0"></span>
-              ${topName ? `<span style="width:18px;height:${AH-4}px;background:#e8e8e8;border-right:1px solid #ddd;flex-shrink:0;font-size:8px;display:inline-flex;align-items:center;justify-content:center;color:#999">🏴</span>` : ''}
               <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topW ? '#1b5e20' : topL ? '#999' : topName ? '#1a0000' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
               ${topW ? `<span style="font-size:11px;color:#2e7d32;flex-shrink:0;padding-right:4px;font-weight:900">✓</span>` : ''}
             </div>
-            <!-- SCORE ENTRY BOXES -->
-            <div style="position:absolute;top:${topScY - mt}px;left:0;right:0;height:${SH}px;background:#fff5f5;border-left:3px solid #cc0000;border-right:1px solid #eee;border-bottom:1px solid #eee"></div>
-            <div style="position:absolute;top:${botScY - mt}px;left:0;right:0;height:${SH}px;background:#f5f5ff;border-left:3px solid #0000cc;border-right:1px solid #eee;border-top:1px solid #eee"></div>
-            <!-- BOTTOM ATHLETE — AO (light blue tint, dark text) -->
-            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;padding-left:0;gap:0;background:${botW ? '#e8f5e9' : botL ? '#f5f5f5' : botName ? '#e8eeff' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${botW ? '#2e7d32' : botL ? '#bbb' : '#0000cc'};overflow:hidden">
+            <!-- Score gaps -->
+            <div style="position:absolute;top:${topScY - mt}px;left:0;right:0;height:${SH}px;background:#fff5f5;border-left:3px solid #cc0000"></div>
+            <div style="position:absolute;top:${botScY - mt}px;left:0;right:0;height:${SH}px;background:#f5f5ff;border-left:3px solid #0000cc"></div>
+            <!-- AO bottom slot -->
+            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:${botW ? '#e8f5e9' : botL ? '#f5f5f5' : botName ? '#e8eeff' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${botW ? '#2e7d32' : botL ? '#bbb' : '#0000cc'};overflow:hidden">
               ${seqBot ? `<span style="font-size:8px;color:#888;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqBot}</span>` : ''}
               <span style="width:1px;height:100%;background:#ddd;flex-shrink:0"></span>
-              ${botName ? `<span style="width:18px;height:${AH-4}px;background:#e8e8e8;border-right:1px solid #ddd;flex-shrink:0;font-size:8px;display:inline-flex;align-items:center;justify-content:center;color:#999">🏴</span>` : ''}
               <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botW ? '#1b5e20' : botL ? '#999' : botName ? '#00001a' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
               ${botW ? `<span style="font-size:11px;color:#2e7d32;flex-shrink:0;padding-right:4px;font-weight:900">✓</span>` : ''}
             </div>
-            ${!isLast ? `<div style="position:absolute;right:0;top:${vTop - mt}px;height:${vBot - vTop}px;width:1px;background:#777"></div>` : ''}
-            ${!isLast ? `<div style="position:absolute;right:${-CG}px;top:${midY - mt}px;height:1px;width:${CG}px;background:#777"></div>` : ''}
+            ${!isLast ? `
+              <!-- Vertical connector: right border from top-slot-center to bottom-slot-center -->
+              <div style="position:absolute;right:0;top:${vTop - mt}px;height:${vBot - vTop}px;width:2px;background:#1A1A8C"></div>
+            ` : ''}
           </div>`;
+
+        // Horizontal line in gap column at midY of this match
+        if (!isLast) {
+          gapHTML += `<div style="position:absolute;top:${midY}px;left:0;right:0;height:2px;background:#1A1A8C"></div>`;
+        }
       }
 
       bracketHTML += `<div style="width:${CW}px;flex-shrink:0">
         <div style="height:16px;background:#1A1A8C;color:#fff;font-size:8px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;letter-spacing:0.5px">${label}</div>
-        <div style="position:relative;height:${TH}px">${matchesHTML}</div>
+        <div style="position:relative;height:${TH}px;overflow:visible">${matchesHTML}</div>
       </div>`;
-      if (!isLast) bracketHTML += `<div style="width:${CG}px;flex-shrink:0"></div>`;
+      if (!isLast) {
+        bracketHTML += `<div style="width:${CG}px;flex-shrink:0;position:relative;height:${TH + 16}px;margin-top:0">${gapHTML}</div>`;
+      }
     }
 
     // Winner
