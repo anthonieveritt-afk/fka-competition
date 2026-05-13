@@ -1,26 +1,133 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #141414;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --accent: #0066cc;
+  --accent-hover: #0055aa;
+  --red: #cc2200;
+  --blue: #0066cc;
+  --muted: #888;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.15s;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.15s;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+.btn-danger {
+  background: #cc2200;
+  color: white;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.15s;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #aa1c00;
+}
+
+input, select, textarea {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--card-border);
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.875rem;
+}
+
+tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-blue { background: rgba(0,102,204,0.2); color: #4da6ff; }
+.badge-green { background: rgba(0,170,100,0.2); color: #4dffaa; }
+.badge-orange { background: rgba(220,120,0,0.2); color: #ffaa4d; }
+.badge-red { background: rgba(204,34,0,0.2); color: #ff6644; }
+.badge-gray { background: rgba(255,255,255,0.1); color: #aaa; }
+
+@media print {
+  body { background: white; color: black; }
+  .no-print { display: none !important; }
 }
