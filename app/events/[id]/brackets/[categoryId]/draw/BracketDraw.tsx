@@ -67,9 +67,11 @@ function advanceWinner(matches: BracketMatch[], matchId: string, winnerId: numbe
 }
 
 // ─── Pure CSS Bracket Renderer ────────────────────────────────────────────
-const SH = 32;   // slot height px
-const COL_W = 175; // column width px
-const COL_GAP = 20; // connector gap px
+const SH = 28;       // slot height px
+const OUTER_GAP = 24; // white space between match pairs
+const R1_MH = SH * 2 + OUTER_GAP; // R1 match height: red + blue + gap
+const COL_W = 175;    // column width px
+const COL_GAP = 18;   // connector gap between columns
 
 function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side }: {
   slot: MatchSlot; isWinner: boolean; isLoser: boolean; seqNum?: number;
@@ -249,9 +251,11 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
             {Array.from({ length: bracket.rounds }, (_, r) => {
               const rMatches = bracket.matches.filter(m => m.round === r).sort((a, b) => a.matchIndex - b.matchIndex);
               const matchCount = rMatches.length;
-              const totalH = bracket.size * SH;
-              const matchH = totalH / matchCount;
-              const slotPad = (matchH - SH * 2 - 10) / 2;
+              // R1 match height = SH*2 + OUTER_GAP. Each subsequent round doubles.
+              const matchH = R1_MH * Math.pow(2, r);
+              const totalH = matchCount * matchH;
+              // Slots are centred within the match, touching each other
+              const slotPad = (matchH - SH * 2) / 2;
               const isLast = r === bracket.rounds - 1;
 
               return (
@@ -262,11 +266,11 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                       {getRoundLabel(r, bracket.rounds)}
                     </div>
                     {/* Matches */}
-                    <div style={{ position: 'relative', height: bracket.size * SH }}>
+                    <div style={{ position: 'relative', height: totalH }}>
                       {rMatches.map(m => {
                         const mt = m.matchIndex * matchH;
                         const topY = mt + slotPad;
-                        const botY = topY + SH + 10;
+                        const botY = topY + SH; // touching — no gap between red and blue
                         const vTop = topY + SH / 2;
                         const vBot = botY + SH / 2;
                         const midY = (vTop + vBot) / 2;
