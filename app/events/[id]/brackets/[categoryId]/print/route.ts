@@ -121,33 +121,34 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
         matchesHTML += `
           <div style="position:absolute;top:${mt}px;left:0;right:0;height:${mh}px;overflow:visible">
             <!-- AKA top slot -->
-            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#ffe8e8;border:1px solid #cc0000;border-left:3px solid #cc0000;overflow:hidden">
+            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#ffe8e8;border:1px solid #a00000;border-left:3px solid #a00000;overflow:hidden">
               ${seqTop ? `<span style="font-size:8px;color:rgba(255,255,255,0.6);flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqTop}</span>` : ''}
-              <span style="width:1px;height:100%;background:rgba(255,255,255,0.25);flex-shrink:0"></span>
+              <span style="width:1px;height:100%;background:rgba(255,255,255,0.3);flex-shrink:0"></span>
               <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topName ? '#fff' : 'rgba(255,255,255,0.4)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
               
             </div>
 
             <!-- AO bottom slot -->
-            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#e8eeff;border:1px solid #0000cc;border-left:3px solid #0000cc;overflow:hidden">
+            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#e8eeff;border:1px solid #000099;border-left:3px solid #000099;overflow:hidden">
               ${seqBot ? `<span style="font-size:8px;color:rgba(255,255,255,0.6);flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqBot}</span>` : ''}
-              <span style="width:1px;height:100%;background:rgba(255,255,255,0.25);flex-shrink:0"></span>
+              <span style="width:1px;height:100%;background:rgba(255,255,255,0.3);flex-shrink:0"></span>
               <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botName ? '#fff' : 'rgba(255,255,255,0.4)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
               
             </div>
 
           </div>`;
 
-        // Gap column: vertical bar + horizontal tails from each slot + midpoint to next round
+        // Gap column: tails from slots meet vertical bar, midpoint goes right to next round
         if (!isLast) {
-          // Vertical bar connecting top slot centre to bottom slot centre
-          gapHTML += `<div style="position:absolute;top:${vTop}px;left:0;width:2px;height:${vBot - vTop}px;background:#000"></div>`;
-          // Horizontal tail from top slot (red) centre
-          gapHTML += `<div style="position:absolute;top:${vTop - 1}px;left:0;right:0;height:2px;background:#000"></div>`;
-          // Horizontal tail from bottom slot (blue) centre  
-          gapHTML += `<div style="position:absolute;top:${vBot - 1}px;left:0;right:0;height:2px;background:#000"></div>`;
-          // Midpoint horizontal — goes full width of gap to connect to next round
-          gapHTML += `<div style="position:absolute;top:${midY - 1}px;left:0;right:-1px;height:2px;background:#000"></div>`;
+          const barX = Math.floor(CG * 0.45); // vertical bar at ~45% of gap width
+          // Horizontal tail from red slot centre (left edge to vertical bar)
+          gapHTML += `<div style="position:absolute;top:${vTop - 1}px;left:0;width:${barX + 2}px;height:2px;background:#000"></div>`;
+          // Horizontal tail from blue slot centre (left edge to vertical bar)
+          gapHTML += `<div style="position:absolute;top:${vBot - 1}px;left:0;width:${barX + 2}px;height:2px;background:#000"></div>`;
+          // Vertical bar connecting the two tails
+          gapHTML += `<div style="position:absolute;top:${vTop - 1}px;left:${barX}px;width:2px;height:${vBot - vTop + 2}px;background:#000"></div>`;
+          // Midpoint horizontal from vertical bar to right edge (into next column)
+          gapHTML += `<div style="position:absolute;top:${midY - 1}px;left:${barX}px;right:-1px;height:2px;background:#000"></div>`;
         }
       }
 

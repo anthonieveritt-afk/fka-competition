@@ -86,7 +86,7 @@ function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side 
   const hasAthlete = !!slot.athleteId && slot.name !== 'BYE' && slot.name !== '—';
   const isBye = slot.name === 'BYE';
   // Only colour if a real athlete is present
-  const bg = hasAthlete ? (side === 'red' ? '#ffe8e8' : '#e8eeff') : '#fff';
+  const bg = hasAthlete ? (side === 'red' ? '#C8161A' : '#1A2EC8') : '#fff';
   const borderLeft = hasAthlete ? (side === 'red' ? '3px solid #cc0000' : '3px solid #0000cc') : '3px solid #ddd';
 
   return (
@@ -299,7 +299,7 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                             {/* Bottom slot (AO - blue) */}
                             <div style={{ position: 'absolute', top: botY - mt, left: 0, right: 0 }}>
                               <div onClick={canPlay && m.bottom.athleteId ? () => handleWinner(m.id, m.bottom.athleteId!) : undefined}
-                                style={{ height: SH, display: 'flex', alignItems: 'center', background: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '#e8eeff' : '#fff', border: '1px solid #ccc', borderLeft: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '3px solid #0000cc' : '3px solid #ddd', cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
+                                style={{ height: SH, display: 'flex', alignItems: 'center', background: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '#1A2EC8' : '#fff', border: '1px solid #ccc', borderLeft: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '3px solid #0000cc' : '3px solid #ddd', cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
                                 title={canPlay && m.bottom.athleteId ? `Click to advance: ${m.bottom.name}` : ''}>
                                 {seqBot !== undefined && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqBot}</span>}
                                 <span style={{ width: 1, background: 'rgba(255,255,255,0.25)', height: '100%', flexShrink: 0 }} />
@@ -307,17 +307,20 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                                 
                               </div>
                             </div>
-                            {/* Connector lines — all in the gap column via negative margin */}
-                            {!isLast && <>
-                              {/* Vertical bar: top slot centre to bottom slot centre */}
-                              <div style={{ position: 'absolute', right: -(COL_GAP), top: vTop - mt - 1, height: vBot - vTop + 2, width: 2, background: '#000' }} />
-                              {/* Horizontal tail from red slot */}
-                              <div style={{ position: 'absolute', right: -(COL_GAP), top: vTop - mt - 1, height: 2, width: COL_GAP, background: '#000' }} />
-                              {/* Horizontal tail from blue slot */}
-                              <div style={{ position: 'absolute', right: -(COL_GAP), top: vBot - mt - 1, height: 2, width: COL_GAP, background: '#000' }} />
-                              {/* Midpoint horizontal — goes full gap width */}
-                              <div style={{ position: 'absolute', right: -(COL_GAP * 2), top: midY - mt - 1, height: 2, width: COL_GAP * 2, background: '#000' }} />
-                            </>}
+                            {/* Connector lines: tails meet at vertical bar, midpoint exits right */}
+                            {!isLast && (() => {
+                              const barOffset = Math.floor(COL_GAP * 0.45); // bar at 45% into gap
+                              return <>
+                                {/* Horizontal tail from red slot to vertical bar */}
+                                <div style={{ position: 'absolute', right: -(barOffset + 2), top: vTop - mt - 1, height: 2, width: barOffset + 2, background: '#000' }} />
+                                {/* Horizontal tail from blue slot to vertical bar */}
+                                <div style={{ position: 'absolute', right: -(barOffset + 2), top: vBot - mt - 1, height: 2, width: barOffset + 2, background: '#000' }} />
+                                {/* Vertical bar connecting the two tails */}
+                                <div style={{ position: 'absolute', right: -(barOffset + 2), top: vTop - mt - 1, height: vBot - vTop + 2, width: 2, background: '#000' }} />
+                                {/* Midpoint horizontal from vertical bar to next column */}
+                                <div style={{ position: 'absolute', right: -(COL_GAP + COL_W), top: midY - mt - 1, height: 2, width: COL_GAP - barOffset, background: '#000' }} />
+                              </>;
+                            })()}
                           </div>
                         );
                       })}
