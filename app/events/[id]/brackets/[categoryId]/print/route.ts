@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 export const dynamic = 'force-dynamic';
 
 function bracketSize(n: number) { let s = 4; while (s < n) s *= 2; return s; }
-const fmt = (a: any) => a ? `${a.surname.toUpperCase()} ${a.first_name[0]}.` : '';
+const fmt = (a: any) => a ? `${a.first_name} ${a.surname}` : '';
 const disciplineLabel: Record<string, string> = { kumite: 'Kumite', kata: 'Kata', slam_man: 'Slam-Man' };
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string; categoryId: string }> }) {
