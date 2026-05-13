@@ -8,7 +8,7 @@ type Athlete = {
   firstName: string;
   surname: string;
   club: string;
-  grade: string;
+  grade: string | null;
   gender: string;
   dateOfBirth: string;
 };

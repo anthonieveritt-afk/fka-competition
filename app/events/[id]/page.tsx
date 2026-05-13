@@ -11,7 +11,7 @@ export default async function EventPublicPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const eventId = parseInt(id);
   let event = null;
-  let categoryList: Array<{ id: number; name: string; discipline: string; gender: string; ageGroup: string; weightClass: string | null; beltRange: string }> = [];
+  let categoryList: Array<{ id: number; name: string; discipline: string; gender: string; ageGroup: string; weightClass: string | null; beltRange: string | null }> = [];
 
   try {
     const [ev] = await db.select().from(events).where(eq(events.id, eventId));

@@ -14,7 +14,7 @@ export default async function AthleteProfilePage({ params }: { params: Promise<{
   let athlete = null;
   let results: Array<{
     id: number; eventName: string; eventDate: string; categoryName: string;
-    position: number; medal: string | null; notes: string | null;
+    position: number | null; medal: string | null; notes: string | null;
   }> = [];
 
   try {

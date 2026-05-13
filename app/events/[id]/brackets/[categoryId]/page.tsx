@@ -20,7 +20,7 @@ export default async function BracketPage({ params }: { params: Promise<{ id: st
     winnerId: number | null; method: string | null;
   }> = [];
   let athleteMap: Record<number, { firstName: string; surname: string; club: string }> = {};
-  let registeredAthletes: Array<{ id: number; firstName: string; surname: string; club: string; grade: string }> = [];
+  let registeredAthletes: Array<{ id: number; firstName: string; surname: string; club: string; grade: string | null }> = [];
 
   try {
     const [ev] = await db.select().from(events).where(eq(events.id, eventId));

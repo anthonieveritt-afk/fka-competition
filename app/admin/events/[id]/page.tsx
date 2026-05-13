@@ -13,7 +13,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   let event = null;
   let categoryList: Array<{
-    id: number; name: string; discipline: string; gender: string; ageGroup: string; weightClass: string | null; beltRange: string
+    id: number; name: string; discipline: string; gender: string; ageGroup: string; weightClass: string | null; beltRange: string | null
   }> = [];
   let regCount = 0;
   let matchList: Array<{

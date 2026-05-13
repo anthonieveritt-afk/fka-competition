@@ -12,7 +12,7 @@ type Category = {
   gender: string;
   ageGroup: string;
   weightClass?: string;
-  beltRange: string;
+  beltRange: string | null;
 };
 
 export default function CategoriesPage() {

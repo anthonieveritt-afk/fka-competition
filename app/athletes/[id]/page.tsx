@@ -10,7 +10,7 @@ export default async function PublicAthleteProfile({ params }: { params: Promise
   const { id } = await params;
   const athleteId = parseInt(id);
   let athlete = null;
-  let results: Array<{ id: number; eventName: string; eventDate: string; categoryName: string; position: number; medal: string | null }> = [];
+  let results: Array<{ id: number; eventName: string; eventDate: string; categoryName: string; position: number | null; medal: string | null }> = [];
 
   try {
     const [a] = await db.select().from(athletes).where(eq(athletes.id, athleteId));
