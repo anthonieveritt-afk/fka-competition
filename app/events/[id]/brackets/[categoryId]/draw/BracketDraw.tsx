@@ -77,7 +77,7 @@ const SH = 28;       // slot height px
 const OUTER_GAP = 24; // white space between match pairs
 const R1_MH = SH * 2 + OUTER_GAP; // R1 match height: red + blue + gap
 const COL_W = 175;    // column width px
-const COL_GAP = 18;   // connector gap between columns
+const COL_GAP = 28;   // connector gap between columns
 
 function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side }: {
   slot: MatchSlot; isWinner: boolean; isLoser: boolean; seqNum?: number;
@@ -309,8 +309,8 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                             </div>
                             {/* Connector lines */}
                             {!isLast && <>
-                              <div style={{ position: 'absolute', right: 0, top: vTop - mt, height: vBot - vTop, width: 1, background: '#444' }} />
-                              <div style={{ position: 'absolute', right: -(COL_GAP), top: midY - mt, height: 1, width: COL_GAP, background: '#444' }} />
+                              <div style={{ position: 'absolute', right: 0, top: vTop - mt, height: vBot - vTop, width: 2, background: '#1A1A8C' }} />
+                              <div style={{ position: 'absolute', right: -(COL_GAP), top: midY - mt, height: 2, width: COL_GAP, background: '#1A1A8C' }} />
                             </>}
                           </div>
                         );
