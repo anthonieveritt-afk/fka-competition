@@ -10,14 +10,14 @@ import {
 } from 'drizzle-orm/pg-core';
 
 // Enums
-export const eventStatusEnum = pgEnum('event_status', ['draft', 'registration', 'live', 'completed']);
-export const disciplineEnum = pgEnum('discipline', ['kumite', 'kata']);
-export const genderEnum = pgEnum('gender', ['male', 'female', 'mixed']);
-export const registrationStatusEnum = pgEnum('registration_status', ['pending', 'confirmed', 'withdrawn']);
-export const roundTypeEnum = pgEnum('round_type', ['pool', 'elimination', 'repechage', 'final', 'semi', 'bronze']);
-export const matchStatusEnum = pgEnum('match_status', ['scheduled', 'live', 'complete']);
-export const importedFromEnum = pgEnum('imported_from', ['csv', 'manual']);
-export const medalEnum = pgEnum('medal', ['gold', 'silver', 'bronze']);
+export const eventStatusEnum = pgEnum('comp_event_status', ['draft', 'registration', 'live', 'completed']);
+export const disciplineEnum = pgEnum('comp_discipline', ['kumite', 'kata']);
+export const genderEnum = pgEnum('comp_gender', ['male', 'female', 'mixed']);
+export const registrationStatusEnum = pgEnum('comp_registration_status', ['pending', 'confirmed', 'withdrawn']);
+export const roundTypeEnum = pgEnum('comp_round_type', ['pool', 'elimination', 'repechage', 'final', 'semi', 'bronze']);
+export const matchStatusEnum = pgEnum('comp_match_status', ['scheduled', 'live', 'complete']);
+export const importedFromEnum = pgEnum('comp_imported_from', ['csv', 'manual']);
+export const medalEnum = pgEnum('comp_medal', ['gold', 'silver', 'bronze']);
 
 // Events
 export const events = pgTable('events', {
