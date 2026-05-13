@@ -14,7 +14,13 @@ function shuffle<T>(arr: T[]): T[] { const a = [...arr]; for (let i = a.length -
 function buildBracket(athletes: (Athlete | null)[], size: number): BracketState {
   const rounds = Math.log2(size);
   const slots: (Athlete | null)[] = new Array(size).fill(null);
-  athletes.forEach((a, i) => { slots[i] = a; });
+  const n = athletes.filter(Boolean).length;
+  // Bresenham even-distribution: spread athletes across ALL bracket positions
+  // Never fill sequentially (puts all athletes in top half with BYEs at bottom)
+  athletes.filter(Boolean).forEach((a, i) => {
+    const pos = Math.floor(i * size / n + size / (2 * n));
+    slots[pos] = a;
+  });
   const matches: BracketMatch[] = [];
 
   for (let m = 0; m < size / 2; m++) {
