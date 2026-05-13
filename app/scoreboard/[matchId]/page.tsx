@@ -1,183 +1,300 @@
 'use client';
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 
-type ScoreData = {
+interface ScoreboardData {
   matchId: number;
-  redName: string;
-  blueName: string;
-  categoryName: string;
-  round: string;
-  redYuko: number;
-  redWazaari: number;
-  redIppon: number;
-  redPenalties: string[];
-  blueYuko: number;
-  blueWazaari: number;
-  blueIppon: number;
-  bluePenalties: string[];
-  redTotal: number;
-  blueTotal: number;
-  duration: number;
   status: string;
-};
+  categoryName: string;
+  tatami: number;
+  discipline: string;
+  aka: {
+    name: string;
+    club: string;
+    score: number;
+    yuko: number;
+    wazaari: number;
+    ippon: number;
+    penalties: string[]; // e.g. ['1C', 'HC']
+  };
+  ao: {
+    name: string;
+    club: string;
+    score: number;
+    yuko: number;
+    wazaari: number;
+    ippon: number;
+    penalties: string[];
+  };
+  timer: number; // seconds remaining
+  timerRunning: boolean;
+  nextAka?: string;
+  nextAo?: string;
+}
+
+const PENALTY_LABELS = ['1C', '2C', '3C', 'HC', 'H'];
+
+function PenaltyDots({ active, side }: { active: string[]; side: 'aka' | 'ao' }) {
+  const bg = side === 'aka' ? '#6B0000' : '#000066';
+  const activeDot = side === 'aka' ? '#ff6666' : '#6699ff';
+  const inactiveDot = side === 'aka' ? '#3d0000' : '#000033';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '8px 16px' }}>
+      {/* Labels */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        {PENALTY_LABELS.map(label => (
+          <span key={label} style={{
+            color: '#FFF8C8', fontSize: 'clamp(10px, 1.2vw, 14px)',
+            fontWeight: 700, width: 'clamp(24px, 2.5vw, 32px)', textAlign: 'center',
+          }}>{label}</span>
+        ))}
+      </div>
+      {/* Dots */}
+      <div style={{
+        background: bg, borderRadius: 10, padding: '6px 12px',
+        display: 'flex', gap: 12,
+      }}>
+        {PENALTY_LABELS.map(label => (
+          <div key={label} style={{
+            width: 'clamp(20px, 2.2vw, 28px)', height: 'clamp(20px, 2.2vw, 28px)',
+            borderRadius: '50%',
+            background: active.includes(label) ? activeDot : inactiveDot,
+            transition: 'background 0.2s',
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 export default function ScoreboardPage() {
   const params = useParams();
   const matchId = params.matchId as string;
-  const [data, setData] = useState<ScoreData | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [lastUpdate, setLastUpdate] = useState(0);
-  const [error, setError] = useState(false);
 
-  // Poll for score updates every 500ms
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/matches/${matchId}/score`);
-        if (!res.ok) { setError(true); return; }
-        const json = await res.json();
-        if (json.score) {
-          setData(json.score);
-          setLastUpdate(Date.now());
-          setError(false);
-        }
-      } catch {
-        setError(true);
-      }
-    };
+  const [data, setData] = useState<ScoreboardData | null>(null);
+  const [localTimer, setLocalTimer] = useState<number>(180);
+  const [timerRunning, setTimerRunning] = useState(false);
 
-    poll();
-    const interval = setInterval(poll, 500);
-    return () => clearInterval(interval);
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/scoreboard/${matchId}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const d: ScoreboardData = await res.json();
+      setData(d);
+      setLocalTimer(d.timer);
+      setTimerRunning(d.timerRunning);
+    } catch {}
   }, [matchId]);
 
-  const timerStr = data ? (() => {
-    const rem = Math.max(0, data.duration - elapsed);
-    const m = Math.floor(rem / 60);
-    const s = rem % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  })() : '0:00';
+  // Poll every 500ms
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 500);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-  const noData = !data || data.status === 'scheduled';
+  // Local timer tick
+  useEffect(() => {
+    if (!timerRunning) return;
+    const tick = setInterval(() => {
+      setLocalTimer(t => Math.max(0, t - 1));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [timerRunning]);
 
-  if (noData && !error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#000' }}>
-        <div className="text-center">
-          <div className="text-8xl mb-6">🥋</div>
-          <div className="text-3xl font-bold text-white mb-2">FKA</div>
-          <div className="text-lg" style={{ color: '#444' }}>No active match</div>
-          <div className="mt-4 text-sm" style={{ color: '#333' }}>Waiting for match to start...</div>
-        </div>
-      </div>
-    );
-  }
-
-  const maxScore = Math.max(data?.redTotal || 1, data?.blueTotal || 1, 1);
-  const redWidth = `${Math.max(10, ((data?.redTotal || 0) / maxScore) * 100)}%`;
-  const blueWidth = `${Math.max(10, ((data?.blueTotal || 0) / maxScore) * 100)}%`;
+  // Demo/placeholder when no match loaded
+  const aka = data?.aka ?? { name: 'AKA COMPETITOR', club: '', score: 0, yuko: 0, wazaari: 0, ippon: 0, penalties: [] };
+  const ao  = data?.ao  ?? { name: 'AO COMPETITOR',  club: '', score: 0, yuko: 0, wazaari: 0, ippon: 0, penalties: [] };
+  const categoryName = data?.categoryName ?? 'Category';
+  const tatami = data?.tatami ?? 1;
+  const timer = data ? localTimer : 180;
+  const nextAka = data?.nextAka ?? '—';
+  const nextAo  = data?.nextAo  ?? '—';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#000', fontFamily: 'system-ui, sans-serif' }}>
-      {/* Category bar */}
-      <div className="text-center py-4" style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}>
-        <div className="text-xl font-bold text-white tracking-widest uppercase">{data?.categoryName || '—'}</div>
-        <div className="text-sm mt-1 uppercase tracking-wider" style={{ color: '#555' }}>{data?.round || '—'}</div>
+    <div style={{
+      width: '100vw', height: '100vh', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+      fontFamily: "'Arial Black', 'Helvetica Neue', Arial, sans-serif",
+      userSelect: 'none',
+    }}>
+      {/* ── TOP HEADER BAR ── */}
+      <div style={{
+        background: '#1A1A8C',
+        borderBottom: '2px solid rgba(255,255,255,0.3)',
+        padding: '8px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, minHeight: '6vh',
+      }}>
+        <span style={{
+          color: '#FFF8C8', fontSize: 'clamp(14px, 2vw, 24px)',
+          fontWeight: 900, letterSpacing: 2, textTransform: 'uppercase',
+          textAlign: 'center',
+        }}>
+          {categoryName}
+        </span>
       </div>
 
-      {/* Main scoreboard */}
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-6xl">
-          <div className="grid grid-cols-3 gap-0 items-center">
+      {/* ── MAIN BODY ── */}
+      <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
 
-            {/* Red side */}
-            <div className="text-center py-12 px-6" style={{ background: 'rgba(180,0,0,0.08)', borderRight: '2px solid rgba(200,0,0,0.2)' }}>
-              <div className="text-lg font-semibold uppercase tracking-widest mb-6" style={{ color: '#cc4444' }}>RED</div>
-              <div className="text-8xl font-bold text-white leading-none mb-4" style={{ fontSize: 'clamp(4rem, 12vw, 9rem)' }}>
-                {data?.redTotal ?? 0}
-              </div>
-              <div className="text-4xl font-bold uppercase tracking-wide mb-2" style={{ color: 'white', fontSize: 'clamp(1.5rem, 4vw, 3rem)' }}>
-                {data?.redName || 'RED'}
-              </div>
-              {/* Score breakdown */}
-              <div className="flex justify-center gap-6 mt-4 text-lg" style={{ color: '#555' }}>
-                <span>Y <span style={{ color: '#888' }}>{data?.redYuko ?? 0}</span></span>
-                <span>W <span style={{ color: '#888' }}>{data?.redWazaari ?? 0}</span></span>
-                <span>I <span style={{ color: '#888' }}>{data?.redIppon ?? 0}</span></span>
-              </div>
-              {/* Penalties */}
-              {(data?.redPenalties?.length ?? 0) > 0 && (
-                <div className="mt-3 flex flex-wrap justify-center gap-1">
-                  {data!.redPenalties.map((p, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(200,100,0,0.3)', color: '#ffaa44' }}>{p}</span>
-                  ))}
-                </div>
-              )}
-            </div>
+        {/* AKA SIDE — left red */}
+        <div style={{
+          flex: 1, background: '#C8161A',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'flex-start', justifyContent: 'flex-start',
+          padding: '2vh 3vw',
+          position: 'relative',
+        }}>
+          <span style={{
+            color: '#FFF8C8', fontSize: 'clamp(28px, 5vw, 72px)',
+            fontWeight: 900, lineHeight: 1,
+          }}>Aka</span>
+        </div>
 
-            {/* Center - Timer */}
-            <div className="text-center px-6">
-              <div className="text-8xl font-bold font-mono" style={{
-                color: '#fff',
-                fontSize: 'clamp(3rem, 10vw, 8rem)',
-                textShadow: '0 0 40px rgba(255,255,255,0.1)',
-              }}>
-                {data ? (() => {
-                  const rem = Math.max(0, data.duration);
-                  const m = Math.floor(rem / 60);
-                  const s = rem % 60;
-                  return `${m}:${s.toString().padStart(2, '0')}`;
-                })() : '—:——'}
-              </div>
-              <div className="mt-4 text-sm uppercase tracking-widest" style={{ color: '#333' }}>
-                {data?.status === 'complete' ? '🏆 COMPLETE' : data?.status === 'live' ? '● LIVE' : '● READY'}
-              </div>
-              {/* VS */}
-              <div className="mt-6 text-4xl font-black" style={{ color: '#222' }}>VS</div>
-            </div>
+        {/* AO SIDE — right blue */}
+        <div style={{
+          flex: 1, background: '#1A2EC8',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'flex-end', justifyContent: 'flex-start',
+          padding: '2vh 3vw',
+        }}>
+          <span style={{
+            color: '#FFF8C8', fontSize: 'clamp(28px, 5vw, 72px)',
+            fontWeight: 900, lineHeight: 1,
+          }}>Ao</span>
+        </div>
 
-            {/* Blue side */}
-            <div className="text-center py-12 px-6" style={{ background: 'rgba(0,60,160,0.08)', borderLeft: '2px solid rgba(0,80,200,0.2)' }}>
-              <div className="text-lg font-semibold uppercase tracking-widest mb-6" style={{ color: '#4488cc' }}>BLUE</div>
-              <div className="text-8xl font-bold text-white leading-none mb-4" style={{ fontSize: 'clamp(4rem, 12vw, 9rem)' }}>
-                {data?.blueTotal ?? 0}
-              </div>
-              <div className="text-4xl font-bold uppercase tracking-wide mb-2" style={{ color: 'white', fontSize: 'clamp(1.5rem, 4vw, 3rem)' }}>
-                {data?.blueName || 'BLUE'}
-              </div>
-              <div className="flex justify-center gap-6 mt-4 text-lg" style={{ color: '#555' }}>
-                <span>Y <span style={{ color: '#888' }}>{data?.blueYuko ?? 0}</span></span>
-                <span>W <span style={{ color: '#888' }}>{data?.blueWazaari ?? 0}</span></span>
-                <span>I <span style={{ color: '#888' }}>{data?.blueIppon ?? 0}</span></span>
-              </div>
-              {(data?.bluePenalties?.length ?? 0) > 0 && (
-                <div className="mt-3 flex flex-wrap justify-center gap-1">
-                  {data!.bluePenalties.map((p, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(0,80,160,0.3)', color: '#88aaff' }}>{p}</span>
-                  ))}
-                </div>
-              )}
-            </div>
+        {/* ── CENTER OVERLAY ── */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'flex-start',
+          pointerEvents: 'none',
+          gap: 0,
+        }}>
+
+          {/* Tatami badge */}
+          <div style={{
+            background: '#fff', borderRadius: 10,
+            padding: '4px 16px', marginTop: '1.5vh',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}>
+            <span style={{ fontSize: 'clamp(9px, 1vw, 12px)', fontWeight: 700, color: '#333', letterSpacing: 1 }}>TATAMI</span>
+            <span style={{ fontSize: 'clamp(18px, 2.5vw, 36px)', fontWeight: 900, color: '#000', lineHeight: 1.1 }}>{tatami}</span>
           </div>
 
-          {/* Score bar */}
-          <div className="mt-8 px-4">
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: '#111' }}>
-              <div className="h-full flex">
-                <div className="transition-all duration-300" style={{ width: redWidth, background: '#cc2200', opacity: 0.8 }}></div>
-                <div className="flex-1"></div>
-                <div className="transition-all duration-300" style={{ width: blueWidth, background: '#0055cc', opacity: 0.8 }}></div>
-              </div>
+          {/* Score row: AKA score | Timer | AO score */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            gap: 'clamp(8px, 2vw, 32px)',
+            marginTop: '2vh',
+          }}>
+            {/* AKA score */}
+            <span style={{
+              color: '#fff', fontSize: 'clamp(60px, 12vw, 180px)',
+              fontWeight: 900, lineHeight: 1, minWidth: '1.2em', textAlign: 'center',
+              textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            }}>{aka.score}</span>
+
+            {/* Timer */}
+            <div style={{
+              background: '#fff', borderRadius: 14,
+              padding: 'clamp(8px, 1.5vh, 20px) clamp(16px, 2.5vw, 40px)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              minWidth: 'clamp(120px, 16vw, 240px)',
+              textAlign: 'center',
+            }}>
+              <span style={{
+                fontSize: 'clamp(36px, 7vw, 100px)',
+                fontWeight: 900, color: timer <= 30 ? '#C8161A' : '#000',
+                letterSpacing: 2, lineHeight: 1,
+              }}>
+                {formatTime(timer)}
+              </span>
             </div>
+
+            {/* AO score */}
+            <span style={{
+              color: '#fff', fontSize: 'clamp(60px, 12vw, 180px)',
+              fontWeight: 900, lineHeight: 1, minWidth: '1.2em', textAlign: 'center',
+              textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            }}>{ao.score}</span>
+          </div>
+
+          {/* Penalty section */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            gap: 'clamp(8px, 2vw, 32px)',
+            marginTop: '1.5vh',
+          }}>
+            <PenaltyDots active={aka.penalties} side="aka" />
+            <span style={{
+              color: '#FFF8C8', fontSize: 'clamp(10px, 1.2vw, 16px)',
+              fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
+              minWidth: '5em', textAlign: 'center',
+            }}>Penalty</span>
+            <PenaltyDots active={ao.penalties} side="ao" />
           </div>
         </div>
       </div>
 
-      {/* FKA Footer */}
-      <div className="text-center py-3" style={{ borderTop: '1px solid #111' }}>
-        <div className="text-xs uppercase tracking-widest" style={{ color: '#222' }}>Frontier Karate Association</div>
+      {/* ── BOTTOM NAME PANELS ── */}
+      <div style={{
+        display: 'flex', flexShrink: 0,
+        minHeight: '18vh',
+      }}>
+        {/* AKA names */}
+        <div style={{
+          flex: 1, background: '#6B0000',
+          borderTop: '2px solid rgba(255,255,255,0.15)',
+          padding: '10px 20px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          gap: 6,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+            <span style={{ color: '#888', fontSize: 'clamp(9px, 1vw, 12px)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', minWidth: '4em' }}>Current</span>
+            <span style={{ color: '#FFF8C8', fontSize: 'clamp(14px, 2.2vw, 28px)', fontWeight: 900, textTransform: 'uppercase' }}>
+              {aka.name}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+            <span style={{ color: '#888', fontSize: 'clamp(9px, 1vw, 12px)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', minWidth: '4em' }}>Next</span>
+            <span style={{ color: '#FFF8C8', fontSize: 'clamp(12px, 1.6vw, 20px)', fontWeight: 700, textTransform: 'uppercase', opacity: 0.75 }}>
+              {nextAka}
+            </span>
+          </div>
+        </div>
+
+        {/* AO names */}
+        <div style={{
+          flex: 1, background: '#000066',
+          borderTop: '2px solid rgba(255,255,255,0.15)',
+          padding: '10px 20px',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-end',
+          gap: 6,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexDirection: 'row-reverse' }}>
+            <span style={{ color: '#888', fontSize: 'clamp(9px, 1vw, 12px)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', minWidth: '4em', textAlign: 'right' }}>Current</span>
+            <span style={{ color: '#FFF8C8', fontSize: 'clamp(14px, 2.2vw, 28px)', fontWeight: 900, textTransform: 'uppercase' }}>
+              {ao.name}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexDirection: 'row-reverse' }}>
+            <span style={{ color: '#888', fontSize: 'clamp(9px, 1vw, 12px)', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', minWidth: '4em', textAlign: 'right' }}>Next</span>
+            <span style={{ color: '#FFF8C8', fontSize: 'clamp(12px, 1.6vw, 20px)', fontWeight: 700, textTransform: 'uppercase', opacity: 0.75 }}>
+              {nextAo}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
