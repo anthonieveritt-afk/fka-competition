@@ -289,7 +289,7 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                         const seqBot = r === 0 ? m.matchIndex * 2 + 2 : undefined;
 
                         return (
-                          <div key={m.id} style={{ position: 'absolute', top: mt, left: 0, right: 0, height: matchH }}>
+                          <div key={m.id} style={{ position: 'absolute', top: mt, left: 0, right: 0, height: matchH, overflow: 'visible' }}>
                             {/* Top slot (AKA - red) */}
                             <div style={{ position: 'absolute', top: topY - mt, left: 0, right: 0 }}>
                               <MatchSlotEl slot={m.top} isWinner={topIsW} isLoser={topIsL} seqNum={seqTop} side="red"
@@ -307,10 +307,16 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                                 
                               </div>
                             </div>
-                            {/* Connector lines */}
+                            {/* Connector lines — all in the gap column via negative margin */}
                             {!isLast && <>
-                              <div style={{ position: 'absolute', right: 0, top: vTop - mt, height: vBot - vTop, width: 2, background: '#000' }} />
-                              <div style={{ position: 'absolute', right: -(COL_GAP), top: midY - mt, height: 2, width: COL_GAP, background: '#000' }} />
+                              {/* Vertical bar: top slot centre to bottom slot centre */}
+                              <div style={{ position: 'absolute', right: -(COL_GAP), top: vTop - mt - 1, height: vBot - vTop + 2, width: 2, background: '#000' }} />
+                              {/* Horizontal tail from red slot */}
+                              <div style={{ position: 'absolute', right: -(COL_GAP), top: vTop - mt - 1, height: 2, width: COL_GAP, background: '#000' }} />
+                              {/* Horizontal tail from blue slot */}
+                              <div style={{ position: 'absolute', right: -(COL_GAP), top: vBot - mt - 1, height: 2, width: COL_GAP, background: '#000' }} />
+                              {/* Midpoint horizontal — goes full gap width */}
+                              <div style={{ position: 'absolute', right: -(COL_GAP * 2), top: midY - mt - 1, height: 2, width: COL_GAP * 2, background: '#000' }} />
                             </>}
                           </div>
                         );

@@ -135,15 +135,19 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
               <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botName ? '#fff' : 'rgba(255,255,255,0.4)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
               
             </div>
-            ${!isLast ? `
-              <!-- Vertical connector: right border from top-slot-center to bottom-slot-center -->
-              <div style="position:absolute;right:0;top:${vTop - mt}px;height:${vBot - vTop}px;width:2px;background:#000"></div>
-            ` : ''}
+
           </div>`;
 
-        // Horizontal line in gap column at midY of this match
+        // Gap column: vertical bar + horizontal tails from each slot + midpoint to next round
         if (!isLast) {
-          gapHTML += `<div style="position:absolute;top:${midY}px;left:0;right:0;height:2px;background:#000"></div>`;
+          // Vertical bar connecting top slot centre to bottom slot centre
+          gapHTML += `<div style="position:absolute;top:${vTop}px;left:0;width:2px;height:${vBot - vTop}px;background:#000"></div>`;
+          // Horizontal tail from top slot (red) centre
+          gapHTML += `<div style="position:absolute;top:${vTop - 1}px;left:0;right:0;height:2px;background:#000"></div>`;
+          // Horizontal tail from bottom slot (blue) centre  
+          gapHTML += `<div style="position:absolute;top:${vBot - 1}px;left:0;right:0;height:2px;background:#000"></div>`;
+          // Midpoint horizontal — goes full width of gap to connect to next round
+          gapHTML += `<div style="position:absolute;top:${midY - 1}px;left:0;right:-1px;height:2px;background:#000"></div>`;
         }
       }
 
