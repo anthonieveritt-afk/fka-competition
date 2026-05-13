@@ -99,10 +99,10 @@ function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side 
       transition: 'background 0.15s',
     }} title={canClick ? `Click to advance: ${slot.name}` : ''}>
       {seqNum !== undefined && (
-        <span style={{ fontSize: 8, color: '#aaa', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqNum}</span>
+        <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqNum}</span>
       )}
-      <span style={{ width: 1, background: '#ddd', height: '100%', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: hasAthlete && !isBye ? 700 : 400, color: isLoser ? '#aaa' : hasAthlete && !isBye ? '#000' : '#bbb', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>
+      <span style={{ width: 1, background: 'rgba(255,255,255,0.25)', height: '100%', flexShrink: 0 }} />
+      <span style={{ fontSize: 10, fontWeight: hasAthlete && !isBye ? 700 : 400, color: hasAthlete && !isBye ? '#fff' : 'rgba(255,255,255,0.35)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>
         {slot.name || '—'}
       </span>
       
@@ -301,9 +301,9 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                               <div onClick={canPlay && m.bottom.athleteId ? () => handleWinner(m.id, m.bottom.athleteId!) : undefined}
                                 style={{ height: SH, display: 'flex', alignItems: 'center', background: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '#e8eeff' : '#fff', border: '1px solid #ccc', borderLeft: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '3px solid #0000cc' : '3px solid #ddd', cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
                                 title={canPlay && m.bottom.athleteId ? `Click to advance: ${m.bottom.name}` : ''}>
-                                {seqBot !== undefined && <span style={{ fontSize: 8, color: '#aaa', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqBot}</span>}
-                                <span style={{ width: 1, background: '#ddd', height: '100%', flexShrink: 0 }} />
-                                <span style={{ fontSize: 10, fontWeight: m.bottom.athleteId && m.bottom.name !== 'BYE' ? 700 : 400, color: botIsL ? '#aaa' : m.bottom.athleteId && m.bottom.name !== 'BYE' ? '#000' : '#bbb', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>{m.bottom.name || '—'}</span>
+                                {seqBot !== undefined && <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqBot}</span>}
+                                <span style={{ width: 1, background: 'rgba(255,255,255,0.25)', height: '100%', flexShrink: 0 }} />
+                                <span style={{ fontSize: 10, fontWeight: m.bottom.athleteId && m.bottom.name !== 'BYE' ? 700 : 400, color: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '#fff' : 'rgba(255,255,255,0.35)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>{m.bottom.name || '—'}</span>
                                 
                               </div>
                             </div>
