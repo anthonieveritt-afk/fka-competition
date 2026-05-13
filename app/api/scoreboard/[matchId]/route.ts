@@ -69,6 +69,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ matchId: 
         penalties: bluePenalties,
       },
       timer: remaining,
+      senshu: (scores as any)?.senshu ?? null,
       timerRunning: match.status === 'live',
     });
   } catch (err) {

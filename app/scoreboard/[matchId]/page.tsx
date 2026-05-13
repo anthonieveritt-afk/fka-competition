@@ -30,6 +30,7 @@ interface ScoreboardData {
   timerRunning: boolean;
   nextAka?: string;
   nextAo?: string;
+  senshu?: 'red' | 'blue' | null;
 }
 
 const PENALTY_LABELS = ['1C', '2C', '3C', 'HC', 'H'];
@@ -79,6 +80,7 @@ export default function ScoreboardPage() {
   const matchId = params.matchId as string;
 
   const [data, setData] = useState<ScoreboardData | null>(null);
+  const [senshu, setSenshu] = useState<'red'|'blue'|null>(null);
   const [localTimer, setLocalTimer] = useState<number>(180);
   const [timerRunning, setTimerRunning] = useState(false);
 
@@ -90,6 +92,7 @@ export default function ScoreboardPage() {
       setData(d);
       setLocalTimer(d.timer);
       setTimerRunning(d.timerRunning);
+      setSenshu(d.senshu ?? null);
     } catch {}
   }, [matchId]);
 
@@ -198,12 +201,21 @@ export default function ScoreboardPage() {
             gap: 'clamp(8px, 2vw, 32px)',
             marginTop: '2vh',
           }}>
-            {/* AKA score */}
-            <span style={{
-              color: '#fff', fontSize: 'clamp(60px, 12vw, 180px)',
-              fontWeight: 900, lineHeight: 1, minWidth: '1.2em', textAlign: 'center',
-              textShadow: '0 2px 8px rgba(0,0,0,0.4)',
-            }}>{aka.score}</span>
+            {/* AKA score + Senshu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {senshu === 'red' && (
+                <span style={{
+                  fontSize: 'clamp(40px, 8vw, 120px)', fontWeight: 900, color: '#22c55e',
+                  textShadow: '0 0 20px #22c55e, 0 0 40px #22c55e', lineHeight: 1,
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }}>S</span>
+              )}
+              <span style={{
+                color: '#fff', fontSize: 'clamp(60px, 12vw, 180px)',
+                fontWeight: 900, lineHeight: 1, minWidth: '1.2em', textAlign: 'center',
+                textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              }}>{aka.score}</span>
+            </div>
 
             {/* Timer */}
             <div style={{
@@ -222,12 +234,20 @@ export default function ScoreboardPage() {
               </span>
             </div>
 
-            {/* AO score */}
-            <span style={{
-              color: '#fff', fontSize: 'clamp(60px, 12vw, 180px)',
-              fontWeight: 900, lineHeight: 1, minWidth: '1.2em', textAlign: 'center',
-              textShadow: '0 2px 8px rgba(0,0,0,0.4)',
-            }}>{ao.score}</span>
+            {/* AO score + Senshu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                color: '#fff', fontSize: 'clamp(60px, 12vw, 180px)',
+                fontWeight: 900, lineHeight: 1, minWidth: '1.2em', textAlign: 'center',
+                textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              }}>{ao.score}</span>
+              {senshu === 'blue' && (
+                <span style={{
+                  fontSize: 'clamp(40px, 8vw, 120px)', fontWeight: 900, color: '#22c55e',
+                  textShadow: '0 0 20px #22c55e, 0 0 40px #22c55e', lineHeight: 1,
+                }}>S</span>
+              )}
+            </div>
           </div>
 
           {/* Penalty section */}

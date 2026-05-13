@@ -1,318 +1,381 @@
 'use client';
-
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 
-type ScoreState = {
-  matchId: number | null;
-  redName: string;
-  blueName: string;
+interface MatchState {
+  matchId: number;
   categoryName: string;
-  round: string;
-  redYuko: number;
-  redWazaari: number;
-  redIppon: number;
-  redPenalties: string[];
-  blueYuko: number;
-  blueWazaari: number;
-  blueIppon: number;
-  bluePenalties: string[];
-  redTotal: number;
-  blueTotal: number;
+  aka: { name: string; score: number; yuko: number; wazaari: number; ippon: number; penalties: string[] };
+  ao:  { name: string; score: number; yuko: number; wazaari: number; ippon: number; penalties: string[] };
   timer: number;
   timerRunning: boolean;
-  duration: number;
+  senshu: 'red' | 'blue' | null;
   status: string;
-};
+}
 
-const defaultState = (): ScoreState => ({
-  matchId: null,
-  redName: 'RED',
-  blueName: 'BLUE',
-  categoryName: '—',
-  round: '—',
-  redYuko: 0,
-  redWazaari: 0,
-  redIppon: 0,
-  redPenalties: [],
-  blueYuko: 0,
-  blueWazaari: 0,
-  blueIppon: 0,
-  bluePenalties: [],
-  redTotal: 0,
-  blueTotal: 0,
-  timer: 180,
-  timerRunning: false,
-  duration: 180,
-  status: 'scheduled',
+const PENALTY_LABELS = ['1C', '2C', '3C', 'HC', 'H'];
+
+const BTN = (style: React.CSSProperties) => ({
+  border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 900,
+  fontFamily: "'Arial Black', Arial, sans-serif",
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'opacity 0.1s, transform 0.1s',
+  active: { opacity: 0.7, transform: 'scale(0.97)' },
+  ...style,
 });
 
-function calcTotal(yuko: number, wazaari: number, ippon: number) {
-  return yuko + (wazaari * 2) + (ippon * 3);
+function formatTime(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function TouchBtn({ onClick, style, children, disabled }: {
+  onClick: () => void; style?: React.CSSProperties; children: React.ReactNode; disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        border: 'none', borderRadius: 14, cursor: disabled ? 'not-allowed' : 'pointer',
+        fontWeight: 900, fontFamily: "'Arial Black', Arial, sans-serif",
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        WebkitTapHighlightColor: 'transparent',
+        opacity: disabled ? 0.4 : 1,
+        fontSize: 18, padding: '14px 10px',
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
 }
 
 export default function TatamiPage() {
   const params = useParams();
   const tatamiId = params.id as string;
-  const [score, setScore] = useState<ScoreState>(defaultState());
-  const [matchInfo, setMatchInfo] = useState<{ id: number; redName: string; blueName: string; categoryName: string; round: string } | null>(null);
-  const [matches, setMatches] = useState<Array<{ id: number; matchNumber: number; redName: string; blueName: string; categoryName: string; roundType: string; status: string }>>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastSaveRef = useRef<number>(0);
 
-  // Load scheduled matches for this tatami
-  useEffect(() => {
-    const load = () => {
-      fetch(`/api/tatami/${tatamiId}/matches`)
-        .then(r => r.json())
-        .then(data => setMatches(data.matches || []))
-        .catch(() => {});
-    };
-    load();
-    const interval = setInterval(load, 5000);
-    return () => clearInterval(interval);
-  }, [tatamiId]);
+  const [matchId, setMatchId] = useState<number | null>(null);
+  const [state, setState] = useState<MatchState | null>(null);
+  const [localTimer, setLocalTimer] = useState(180);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [senshu, setSenshu] = useState<'red' | 'blue' | null>(null);
+  const lastFetch = useRef(0);
 
-  // Auto-save scores periodically
-  const saveScore = useCallback(async (s: ScoreState) => {
-    if (!s.matchId) return;
+  const send = useCallback(async (body: object) => {
+    if (!matchId) return;
+    await fetch(`/api/tatami/${matchId}/control`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }, [matchId]);
+
+  const fetchState = useCallback(async () => {
     const now = Date.now();
-    if (now - lastSaveRef.current < 500) return;
-    lastSaveRef.current = now;
+    if (now - lastFetch.current < 400) return;
+    lastFetch.current = now;
     try {
-      await fetch(`/api/matches/${s.matchId}/score`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          redYuko: s.redYuko, redWazaari: s.redWazaari, redIppon: s.redIppon, redPenalties: s.redPenalties,
-          blueYuko: s.blueYuko, blueWazaari: s.blueWazaari, blueIppon: s.blueIppon, bluePenalties: s.bluePenalties,
-          redTotal: s.redTotal, blueTotal: s.blueTotal, duration: s.duration - s.timer,
-        }),
-      });
-    } catch (e) {}
-  }, []);
+      const mid = matchId ?? 1;
+      const res = await fetch(`/api/scoreboard/${mid}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const d = await res.json();
+      setState(d);
+      setLocalTimer(d.timer);
+      setTimerRunning(d.timerRunning);
+      setSenshu(d.senshu ?? null);
+      if (!matchId) setMatchId(mid);
+    } catch {}
+  }, [matchId]);
 
-  // Timer
   useEffect(() => {
-    if (score.timerRunning) {
-      timerRef.current = setInterval(() => {
-        setScore(prev => {
-          if (prev.timer <= 0) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            return { ...prev, timerRunning: false };
-          }
-          const newState = { ...prev, timer: prev.timer - 1 };
-          saveScore(newState);
-          return newState;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [score.timerRunning, saveScore]);
+    fetchState();
+    const iv = setInterval(fetchState, 600);
+    return () => clearInterval(iv);
+  }, [fetchState]);
 
-  const loadMatch = (m: typeof matches[0]) => {
-    setScore({
-      ...defaultState(),
-      matchId: m.id,
-      redName: m.redName || 'RED',
-      blueName: m.blueName || 'BLUE',
-      categoryName: m.categoryName,
-      round: m.roundType,
-      status: 'live',
-    });
+  useEffect(() => {
+    if (!timerRunning) return;
+    const tick = setInterval(() => setLocalTimer(t => Math.max(0, t - 1)), 1000);
+    return () => clearInterval(tick);
+  }, [timerRunning]);
+
+  const aka = state?.aka ?? { name: 'AKA', score: 0, yuko: 0, wazaari: 0, ippon: 0, penalties: [] };
+  const ao  = state?.ao  ?? { name: 'AO',  score: 0, yuko: 0, wazaari: 0, ippon: 0, penalties: [] };
+
+  const awardPoints = (side: 'red'|'blue', points: 1|2|3, undo = false) =>
+    send({ type: 'points', side, points, undo });
+
+  const addPenalty = (side: 'red'|'blue', penalty: string, remove = false) =>
+    send({ type: 'penalty', side, penalty, remove });
+
+  const timerAction = (action: 'start'|'stop'|'reset') => {
+    if (action === 'start') setTimerRunning(true);
+    if (action === 'stop') setTimerRunning(false);
+    if (action === 'reset') { setLocalTimer(180); setTimerRunning(false); }
+    send({ type: 'timer', action });
   };
 
-  const updateScore = (side: 'red' | 'blue', type: 'yuko' | 'wazaari' | 'ippon', delta: number) => {
-    setScore(prev => {
-      const newS = { ...prev };
-      if (side === 'red') {
-        if (type === 'yuko') newS.redYuko = Math.max(0, prev.redYuko + delta);
-        else if (type === 'wazaari') newS.redWazaari = Math.max(0, prev.redWazaari + delta);
-        else if (type === 'ippon') newS.redIppon = Math.max(0, prev.redIppon + delta);
-      } else {
-        if (type === 'yuko') newS.blueYuko = Math.max(0, prev.blueYuko + delta);
-        else if (type === 'wazaari') newS.blueWazaari = Math.max(0, prev.blueWazaari + delta);
-        else if (type === 'ippon') newS.blueIppon = Math.max(0, prev.blueIppon + delta);
-      }
-      newS.redTotal = calcTotal(newS.redYuko, newS.redWazaari, newS.redIppon);
-      newS.blueTotal = calcTotal(newS.blueYuko, newS.blueWazaari, newS.blueIppon);
-      saveScore(newS);
-      return newS;
-    });
+  const toggleSenshu = (side: 'red'|'blue') => {
+    const newVal = senshu === side ? null : side;
+    setSenshu(newVal);
+    send({ type: 'senshu', side: newVal });
   };
 
-  const addPenalty = (side: 'red' | 'blue', penalty: string) => {
-    setScore(prev => {
-      const key = `${side}Penalties` as 'redPenalties' | 'bluePenalties';
-      return { ...prev, [key]: [...prev[key], penalty] };
-    });
-  };
-
-  const resetTimer = (duration: number) => {
-    setScore(prev => ({ ...prev, timer: duration, duration, timerRunning: false }));
-  };
-
-  const endMatch = async () => {
-    if (!score.matchId) return;
-    setScore(prev => ({ ...prev, timerRunning: false, status: 'complete' }));
-    try {
-      const winnerId = score.redTotal >= score.blueTotal ? 'red' : 'blue';
-      await fetch(`/api/matches/${score.matchId}/end`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ winnerId, method: 'score' }),
-      });
-      setMatches(prev => prev.filter(m => m.id !== score.matchId));
-      setScore(defaultState());
-    } catch (e) {}
-  };
-
-  const mins = Math.floor(score.timer / 60);
-  const secs = score.timer % 60;
-  const timerStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-  const timerColor = score.timer <= 30 ? '#ff4444' : score.timer <= 60 ? '#ffaa00' : '#4dffaa';
+  const timerColor = localTimer <= 30 ? '#C8161A' : timerRunning ? '#22c55e' : '#fff';
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#050505' }}>
+    <div style={{
+      minHeight: '100vh', background: '#0a0a0a', padding: 0, margin: 0, overflow: 'hidden',
+      fontFamily: "'Arial Black', Arial, sans-serif",
+      display: 'flex', flexDirection: 'column',
+    }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ background: '#0a0a0a', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <Link href="/admin" className="text-sm" style={{ color: '#666' }}>← Admin</Link>
-        <div className="font-bold text-white">TATAMI {tatamiId}</div>
-        <div className="text-sm" style={{ color: '#666' }}>{score.categoryName} · {score.round}</div>
+      <div style={{
+        background: '#1A1A8C', padding: '10px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <span style={{ color: '#FFF8C8', fontSize: 13, fontWeight: 700 }}>
+          ⚡ Tatami {tatamiId}
+        </span>
+        <span style={{ color: '#FFF8C8', fontSize: 13, fontWeight: 700 }}>
+          {state?.categoryName ?? 'No match loaded'}
+        </span>
+        <span style={{ color: '#FFF8C8', fontSize: 13, fontWeight: 700 }}>
+          Match #{matchId ?? '—'}
+        </span>
       </div>
 
-      {/* Match selector */}
-      {!score.matchId && (
-        <div className="flex-1 p-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Select Match</h2>
-          {matches.length === 0 ? (
-            <div className="text-center py-12" style={{ color: '#555' }}>No matches scheduled for Tatami {tatamiId}.</div>
-          ) : (
-            <div className="space-y-2">
-              {matches.map(m => (
-                <button key={m.id} onClick={() => loadMatch(m)} className="w-full text-left card hover:border-white/20 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-white">Match {m.matchNumber}: {m.redName} vs {m.blueName}</div>
-                      <div className="text-xs mt-1" style={{ color: '#666' }}>{m.categoryName} · {m.roundType}</div>
-                    </div>
-                    <span className="text-xs" style={{ color: '#0066cc' }}>Start →</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+      {/* Timer section */}
+      <div style={{
+        background: '#141414', borderBottom: '1px solid rgba(255,255,255,0.08)',
+        padding: '16px 12px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{
+          fontSize: 72, fontWeight: 900, color: timerColor,
+          letterSpacing: 4, lineHeight: 1,
+          transition: 'color 0.3s',
+        }}>
+          {formatTime(localTimer)}
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <TouchBtn
+            onClick={() => timerAction('start')}
+            disabled={timerRunning}
+            style={{ background: '#22c55e', color: '#fff', fontSize: 16, padding: '14px 28px', minWidth: 100 }}
+          >▶ START</TouchBtn>
+          <TouchBtn
+            onClick={() => timerAction('stop')}
+            disabled={!timerRunning}
+            style={{ background: '#f59e0b', color: '#000', fontSize: 16, padding: '14px 28px', minWidth: 100 }}
+          >⏸ STOP</TouchBtn>
+          <TouchBtn
+            onClick={() => timerAction('reset')}
+            style={{ background: '#444', color: '#fff', fontSize: 16, padding: '14px 28px', minWidth: 100 }}
+          >↺ RESET</TouchBtn>
+        </div>
+      </div>
+
+      {/* Score display */}
+      <div style={{ display: 'flex', gap: 0, flexShrink: 0 }}>
+        {/* AKA score */}
+        <div style={{
+          flex: 1, background: '#C8161A',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '8px 0', gap: 12, position: 'relative',
+        }}>
+          {senshu === 'red' && (
+            <span style={{
+              fontSize: 36, fontWeight: 900, color: '#22c55e',
+              textShadow: '0 0 12px #22c55e', position: 'absolute', left: 12,
+            }}>S</span>
+          )}
+          <span style={{ fontSize: 64, fontWeight: 900, color: '#fff' }}>{aka.score}</span>
+          <span style={{ color: '#FFF8C8', fontSize: 13, fontWeight: 700 }}>
+            {aka.yuko}Y / {aka.wazaari}W / {aka.ippon}I
+          </span>
+        </div>
+        <div style={{ width: 2, background: '#222' }} />
+        {/* AO score */}
+        <div style={{
+          flex: 1, background: '#1A2EC8',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '8px 0', gap: 12, position: 'relative',
+        }}>
+          <span style={{ color: '#FFF8C8', fontSize: 13, fontWeight: 700 }}>
+            {ao.yuko}Y / {ao.wazaari}W / {ao.ippon}I
+          </span>
+          <span style={{ fontSize: 64, fontWeight: 900, color: '#fff' }}>{ao.score}</span>
+          {senshu === 'blue' && (
+            <span style={{
+              fontSize: 36, fontWeight: 900, color: '#22c55e',
+              textShadow: '0 0 12px #22c55e', position: 'absolute', right: 12,
+            }}>S</span>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Active scoring UI */}
-      {score.matchId && (
-        <div className="flex-1 flex flex-col">
-          {/* Timer */}
-          <div className="text-center py-6">
-            <div className="text-7xl font-bold font-mono" style={{ color: timerColor }}>{timerStr}</div>
-            <div className="flex justify-center gap-3 mt-4">
-              <button onClick={() => setScore(p => ({ ...p, timerRunning: !p.timerRunning }))}
-                className="btn-primary text-lg px-8 py-3">
-                {score.timerRunning ? '⏸ Pause' : '▶ Start'}
-              </button>
-              <button onClick={() => resetTimer(180)} className="btn-secondary">3:00</button>
-              <button onClick={() => resetTimer(120)} className="btn-secondary">2:00</button>
-              <button onClick={() => resetTimer(score.duration)} className="btn-secondary">Reset</button>
-            </div>
+      {/* Main controls */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: '#222' }}>
+
+        {/* AKA CONTROLS */}
+        <div style={{ background: '#0a0a0a', padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{
+            color: '#C8161A', fontSize: 13, fontWeight: 900, textAlign: 'center',
+            letterSpacing: 2, marginBottom: 4,
+          }}>🔴 AKA — {aka.name}</div>
+
+          {/* Points */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            {([1, 2, 3] as const).map(pts => (
+              <TouchBtn key={pts}
+                onClick={() => awardPoints('red', pts)}
+                style={{ background: '#C8161A', color: '#fff', fontSize: 20, padding: 16, flexDirection: 'column' }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>
+                  {pts === 1 ? 'YUKO' : pts === 2 ? 'WAZA-ARI' : 'IPPON'}
+                </span>
+                <span style={{ fontSize: 28 }}>+{pts}</span>
+              </TouchBtn>
+            ))}
           </div>
 
-          {/* Score display */}
-          <div className="grid grid-cols-2 gap-4 px-4 mb-4">
-            <div className="text-center py-6 rounded-xl" style={{ background: 'rgba(204,34,0,0.15)', border: '2px solid rgba(204,34,0,0.3)' }}>
-              <div className="text-2xl font-bold mb-1" style={{ color: '#ff6644' }}>{score.redName}</div>
-              <div className="text-6xl font-bold text-white">{score.redTotal}</div>
-              <div className="flex justify-center gap-4 mt-2 text-sm" style={{ color: '#aaa' }}>
-                <span>Y:{score.redYuko}</span>
-                <span>W:{score.redWazaari}</span>
-                <span>I:{score.redIppon}</span>
-              </div>
-              {score.redPenalties.length > 0 && (
-                <div className="mt-2 text-xs" style={{ color: '#ff9944' }}>{score.redPenalties.join(', ')}</div>
-              )}
-            </div>
-            <div className="text-center py-6 rounded-xl" style={{ background: 'rgba(0,102,204,0.15)', border: '2px solid rgba(0,102,204,0.3)' }}>
-              <div className="text-2xl font-bold mb-1" style={{ color: '#4da6ff' }}>{score.blueName}</div>
-              <div className="text-6xl font-bold text-white">{score.blueTotal}</div>
-              <div className="flex justify-center gap-4 mt-2 text-sm" style={{ color: '#aaa' }}>
-                <span>Y:{score.blueYuko}</span>
-                <span>W:{score.blueWazaari}</span>
-                <span>I:{score.blueIppon}</span>
-              </div>
-              {score.bluePenalties.length > 0 && (
-                <div className="mt-2 text-xs" style={{ color: '#ff9944' }}>{score.bluePenalties.join(', ')}</div>
-              )}
-            </div>
+          {/* Undo points */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            {([1, 2, 3] as const).map(pts => (
+              <TouchBtn key={pts}
+                onClick={() => awardPoints('red', pts, true)}
+                style={{ background: '#3d0000', color: '#ff8888', fontSize: 13, padding: '8px 4px', flexDirection: 'column' }}
+              >
+                <span style={{ fontSize: 9, marginBottom: 1 }}>UNDO</span>
+                <span>{pts === 1 ? 'YUKO' : pts === 2 ? 'W-ARI' : 'IPPON'}</span>
+              </TouchBtn>
+            ))}
           </div>
 
-          {/* Score buttons */}
-          <div className="grid grid-cols-2 gap-4 px-4 mb-4">
-            {/* Red buttons */}
-            <div className="space-y-2">
-              {[
-                { label: '+1 Yuko', action: () => updateScore('red', 'yuko', 1), style: 'rgba(204,34,0,0.7)' },
-                { label: '+2 Waza-ari', action: () => updateScore('red', 'wazaari', 1), style: 'rgba(204,34,0,0.7)' },
-                { label: '+3 Ippon', action: () => updateScore('red', 'ippon', 1), style: '#cc2200' },
-                { label: '-1 Undo', action: () => {
-                  if (score.redIppon > 0) updateScore('red', 'ippon', -1);
-                  else if (score.redWazaari > 0) updateScore('red', 'wazaari', -1);
-                  else if (score.redYuko > 0) updateScore('red', 'yuko', -1);
-                }, style: 'rgba(100,0,0,0.6)' },
-              ].map(btn => (
-                <button key={btn.label} onClick={btn.action} className="w-full py-4 rounded-lg font-bold text-white text-lg transition-opacity hover:opacity-80"
-                  style={{ background: btn.style }}>
-                  {btn.label}
-                </button>
-              ))}
-              <div className="grid grid-cols-2 gap-2">
-                {['Chukoku', 'Keikoku', 'Hansoku', 'Hansoku-make'].map(p => (
-                  <button key={p} onClick={() => addPenalty('red', p)} className="py-2 rounded text-xs font-medium text-white"
-                    style={{ background: 'rgba(150,80,0,0.5)' }}>{p}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Blue buttons */}
-            <div className="space-y-2">
-              {[
-                { label: '+1 Yuko', action: () => updateScore('blue', 'yuko', 1), style: 'rgba(0,80,180,0.7)' },
-                { label: '+2 Waza-ari', action: () => updateScore('blue', 'wazaari', 1), style: 'rgba(0,80,180,0.7)' },
-                { label: '+3 Ippon', action: () => updateScore('blue', 'ippon', 1), style: '#0066cc' },
-                { label: '-1 Undo', action: () => {
-                  if (score.blueIppon > 0) updateScore('blue', 'ippon', -1);
-                  else if (score.blueWazaari > 0) updateScore('blue', 'wazaari', -1);
-                  else if (score.blueYuko > 0) updateScore('blue', 'yuko', -1);
-                }, style: 'rgba(0,30,100,0.6)' },
-              ].map(btn => (
-                <button key={btn.label} onClick={btn.action} className="w-full py-4 rounded-lg font-bold text-white text-lg transition-opacity hover:opacity-80"
-                  style={{ background: btn.style }}>
-                  {btn.label}
-                </button>
-              ))}
-              <div className="grid grid-cols-2 gap-2">
-                {['Chukoku', 'Keikoku', 'Hansoku', 'Hansoku-make'].map(p => (
-                  <button key={p} onClick={() => addPenalty('blue', p)} className="py-2 rounded text-xs font-medium text-white"
-                    style={{ background: 'rgba(0,60,120,0.6)' }}>{p}</button>
-                ))}
-              </div>
-            </div>
+          {/* Penalties */}
+          <div style={{ color: '#888', fontSize: 11, fontWeight: 700, textAlign: 'center', letterSpacing: 2 }}>WARNINGS</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {['Chukoku', 'Keikoku', 'Hansoku'].map((p, i) => {
+              const code = ['1C', '2C', '3C'][i];
+              const active = aka.penalties.includes(code);
+              return (
+                <div key={p} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <TouchBtn
+                    onClick={() => addPenalty('red', code)}
+                    style={{
+                      background: active ? '#ff4444' : '#2a0000',
+                      color: active ? '#fff' : '#ff8888',
+                      fontSize: 11, padding: '10px 4px', flexDirection: 'column',
+                    }}
+                  >
+                    <span style={{ fontSize: 9 }}>{p}</span>
+                    <span style={{ fontSize: 16, fontWeight: 900 }}>{code}</span>
+                  </TouchBtn>
+                  <TouchBtn
+                    onClick={() => addPenalty('red', code, true)}
+                    style={{ background: '#111', color: '#666', fontSize: 9, padding: '4px' }}
+                  >undo</TouchBtn>
+                </div>
+              );
+            })}
           </div>
 
-          {/* End match + scoreboard links */}
-          <div className="flex justify-center gap-4 px-4 pb-6">
-            <button onClick={endMatch} className="btn-danger px-8 py-3 text-lg font-bold">End Match</button>
-            <Link href={`/scoreboard/${score.matchId}`} target="_blank" className="btn-secondary px-6 py-3">🖥 Scoreboard ↗</Link>
-          </div>
+          {/* Senshu */}
+          <TouchBtn
+            onClick={() => toggleSenshu('red')}
+            style={{
+              background: senshu === 'red' ? '#22c55e' : '#1a2a1a',
+              color: senshu === 'red' ? '#000' : '#22c55e',
+              fontSize: 14, padding: '12px', border: '2px solid #22c55e',
+              flexDirection: 'column', gap: 2,
+            }}
+          >
+            <span style={{ fontSize: 28, fontWeight: 900 }}>S</span>
+            <span>{senshu === 'red' ? '✓ SENSHU (tap to remove)' : 'AWARD SENSHU'}</span>
+          </TouchBtn>
         </div>
-      )}
+
+        {/* AO CONTROLS */}
+        <div style={{ background: '#0a0a0a', padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{
+            color: '#4488ff', fontSize: 13, fontWeight: 900, textAlign: 'center',
+            letterSpacing: 2, marginBottom: 4,
+          }}>🔵 AO — {ao.name}</div>
+
+          {/* Points */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            {([1, 2, 3] as const).map(pts => (
+              <TouchBtn key={pts}
+                onClick={() => awardPoints('blue', pts)}
+                style={{ background: '#1A2EC8', color: '#fff', fontSize: 20, padding: 16, flexDirection: 'column' }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 700, marginBottom: 2 }}>
+                  {pts === 1 ? 'YUKO' : pts === 2 ? 'WAZA-ARI' : 'IPPON'}
+                </span>
+                <span style={{ fontSize: 28 }}>+{pts}</span>
+              </TouchBtn>
+            ))}
+          </div>
+
+          {/* Undo points */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            {([1, 2, 3] as const).map(pts => (
+              <TouchBtn key={pts}
+                onClick={() => awardPoints('blue', pts, true)}
+                style={{ background: '#00003d', color: '#8888ff', fontSize: 13, padding: '8px 4px', flexDirection: 'column' }}
+              >
+                <span style={{ fontSize: 9, marginBottom: 1 }}>UNDO</span>
+                <span>{pts === 1 ? 'YUKO' : pts === 2 ? 'W-ARI' : 'IPPON'}</span>
+              </TouchBtn>
+            ))}
+          </div>
+
+          {/* Penalties */}
+          <div style={{ color: '#888', fontSize: 11, fontWeight: 700, textAlign: 'center', letterSpacing: 2 }}>WARNINGS</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {['Chukoku', 'Keikoku', 'Hansoku'].map((p, i) => {
+              const code = ['1C', '2C', '3C'][i];
+              const active = ao.penalties.includes(code);
+              return (
+                <div key={p} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <TouchBtn
+                    onClick={() => addPenalty('blue', code)}
+                    style={{
+                      background: active ? '#4444ff' : '#00002a',
+                      color: active ? '#fff' : '#8888ff',
+                      fontSize: 11, padding: '10px 4px', flexDirection: 'column',
+                    }}
+                  >
+                    <span style={{ fontSize: 9 }}>{p}</span>
+                    <span style={{ fontSize: 16, fontWeight: 900 }}>{code}</span>
+                  </TouchBtn>
+                  <TouchBtn
+                    onClick={() => addPenalty('blue', code, true)}
+                    style={{ background: '#111', color: '#666', fontSize: 9, padding: '4px' }}
+                  >undo</TouchBtn>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Senshu */}
+          <TouchBtn
+            onClick={() => toggleSenshu('blue')}
+            style={{
+              background: senshu === 'blue' ? '#22c55e' : '#1a2a1a',
+              color: senshu === 'blue' ? '#000' : '#22c55e',
+              fontSize: 14, padding: '12px', border: '2px solid #22c55e',
+              flexDirection: 'column', gap: 2,
+            }}
+          >
+            <span style={{ fontSize: 28, fontWeight: 900 }}>S</span>
+            <span>{senshu === 'blue' ? '✓ SENSHU (tap to remove)' : 'AWARD SENSHU'}</span>
+          </TouchBtn>
+        </div>
+      </div>
     </div>
   );
 }
