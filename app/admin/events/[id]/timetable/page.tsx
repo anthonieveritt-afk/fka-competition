@@ -150,9 +150,9 @@ export default async function TimetablePage({ params }: { params: Promise<{ id: 
             Kata & Kumite: 2 min/match · Slam-Man: 1 min/match · 5 min break between events
           </div>
           <div className="no-print" style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => window.print()} style={{ background: '#0066cc', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' } as any}>
+            <a href="javascript:window.print()" style={{ background: '#0066cc', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}>
               🖨 Print Timetable
-            </button>
+            </a>
           </div>
         </div>
       </div>
