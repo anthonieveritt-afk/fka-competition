@@ -64,19 +64,20 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
     // Layout constants
     // Scale slot height to fill the printable area (A4 landscape ≈ 680px usable after header/footer)
-    const TARGET_H = 680;
-    const AH = Math.max(22, Math.floor((TARGET_H / size) * 0.6)); // athlete row height
-    const SH = Math.max(8, Math.floor(AH * 0.35));                // score box height
-    const CW = Math.min(200, Math.max(148, Math.floor(650 / rounds))); // column width
-    const CG = Math.max(12, Math.floor(CW * 0.1));                 // gap between columns
-    const TH = size * AH; // total bracket height
+    // Match the draw page: slots touch within match, gap between matches
+    const OUTER_GAP = 18;
+    const AH = Math.max(20, Math.floor(((600) / (size / 2)) * 0.55));
+    const R1_MH = AH * 2 + OUTER_GAP;
+    const CW = Math.min(190, Math.max(130, Math.floor(600 / rounds)));
+    const CG = 20;
+    const TH = (size / 2) * R1_MH;
 
     // Build HTML for each round column
     let bracketHTML = '';
     for (let r = 0; r < rounds; r++) {
       const mc = size / Math.pow(2, r + 1);
-      const mh = TH / mc;
-      const pad = (mh - AH * 2 - SH * 2) / 2;
+      const mh = R1_MH * Math.pow(2, r);
+      const pad = (mh - AH * 2) / 2;
       const isLast = r === rounds - 1;
       const label = r === rounds - 1 ? 'Final' : r === rounds - 2 ? 'Semi-Final' : r === rounds - 3 ? 'Quarter-Final' : `Round ${r + 1}`;
 
@@ -88,12 +89,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       for (let mi = 0; mi < mc; mi++) {
         const mt = mi * mh;
         const topY = mt + pad;
-        const topScY = topY + AH;
-        const botScY = topScY + SH;
-        const botY = botScY + SH;
+        const botY = topY + AH;
         const vTop = topY + AH / 2;
         const vBot = botY + AH / 2;
-        const midY = (vTop + vBot) / 2;
+        const midY = topY + AH;
 
         let topName = '', botName = '', wid = null;
         let topW = false, botW = false, topL = false, botL = false;
@@ -128,9 +127,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
               <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topW ? '#1b5e20' : topL ? '#999' : topName ? '#1a0000' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
               ${topW ? `<span style="font-size:11px;color:#2e7d32;flex-shrink:0;padding-right:4px;font-weight:900">✓</span>` : ''}
             </div>
-            <!-- Score gaps -->
-            <div style="position:absolute;top:${topScY - mt}px;left:0;right:0;height:${SH}px;background:#fff5f5;border-left:3px solid #cc0000"></div>
-            <div style="position:absolute;top:${botScY - mt}px;left:0;right:0;height:${SH}px;background:#f5f5ff;border-left:3px solid #0000cc"></div>
+
             <!-- AO bottom slot -->
             <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:${botW ? '#e8f5e9' : botL ? '#f5f5f5' : botName ? '#e8eeff' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${botW ? '#2e7d32' : botL ? '#bbb' : '#0000cc'};overflow:hidden">
               ${seqBot ? `<span style="font-size:8px;color:#888;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqBot}</span>` : ''}
