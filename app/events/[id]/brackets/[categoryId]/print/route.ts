@@ -118,17 +118,22 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
         matchesHTML += `
           <div style="position:absolute;top:${mt}px;left:0;right:0;height:${mh}px">
-            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;border-bottom:1px solid ${topW ? '#2e7d32' : topL ? '#c62828' : '#999'};display:flex;align-items:center;padding-left:3px;gap:3px;background:${topW ? '#e8f5e9' : topL ? '#fce4e4' : !topName && r === 0 ? '#f8f8f8' : '#fff'};overflow:hidden">
-              ${seqTop ? `<span style="font-size:8px;color:#aaa;flex-shrink:0;min-width:14px;font-weight:700">${seqTop}</span>` : ''}
-              ${topName || (r === 0 && !slots[mi * 2]) ? `<span style="width:14px;height:9px;background:#e8e8e8;border:1px solid #ccc;flex-shrink:0;font-size:6px;display:inline-flex;align-items:center;justify-content:center;color:#aaa">🏴</span>` : ''}
-              <span style="font-size:9px;font-weight:${topName ? '700' : '400'};color:${topName ? '#000' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1">${topName || (r === 0 ? 'BYE' : '')}</span>
+            <!-- TOP ATHLETE — RED (AKA) -->
+            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;padding-left:3px;gap:3px;background:${topW ? '#b71c1c' : topL ? '#e0e0e0' : topName ? '#C8161A' : '#f5c6c6'};border:1px solid ${topW ? '#4caf50' : '#a00'};overflow:hidden">
+              ${seqTop ? `<span style="font-size:8px;color:rgba(255,255,255,0.7);flex-shrink:0;min-width:14px;font-weight:700">${seqTop}</span>` : ''}
+              ${topName ? `<span style="width:14px;height:9px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);flex-shrink:0;font-size:6px;display:inline-flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6)">🏴</span>` : ''}
+              <span style="font-size:9px;font-weight:700;color:${topName ? '#fff' : 'rgba(255,255,255,0.5)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1">${topName || (r === 0 ? 'BYE' : '')}</span>
+              ${topW ? `<span style="font-size:10px;color:#fff;flex-shrink:0;padding-right:4px">✓</span>` : ''}
             </div>
-            <div style="position:absolute;top:${topScY - mt}px;left:0;right:0;height:${SH}px;background:#ffe0e0;border:1px solid #ffb3b3;border-top:none"></div>
-            <div style="position:absolute;top:${botScY - mt}px;left:0;right:0;height:${SH}px;background:#e0e8ff;border:1px solid #b3c6ff"></div>
-            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;border-bottom:1px solid ${botW ? '#2e7d32' : botL ? '#c62828' : '#999'};display:flex;align-items:center;padding-left:3px;gap:3px;background:${botW ? '#e8f5e9' : botL ? '#fce4e4' : !botName && r === 0 ? '#f8f8f8' : '#fff'};overflow:hidden">
-              ${seqBot ? `<span style="font-size:8px;color:#aaa;flex-shrink:0;min-width:14px;font-weight:700">${seqBot}</span>` : ''}
-              ${botName || (r === 0 && !slots[mi * 2 + 1]) ? `<span style="width:14px;height:9px;background:#e8e8e8;border:1px solid #ccc;flex-shrink:0;font-size:6px;display:inline-flex;align-items:center;justify-content:center;color:#aaa">🏴</span>` : ''}
-              <span style="font-size:9px;font-weight:${botName ? '700' : '400'};color:${botName ? '#000' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1">${botName || (r === 0 ? 'BYE' : '')}</span>
+            <!-- SCORE ENTRY BOX (between red and blue) -->
+            <div style="position:absolute;top:${topScY - mt}px;left:0;right:0;height:${SH}px;background:#fff8f8;border-left:1px solid #a00;border-right:1px solid #a00"></div>
+            <div style="position:absolute;top:${botScY - mt}px;left:0;right:0;height:${SH}px;background:#f8f8ff;border-left:1px solid #00a;border-right:1px solid #00a"></div>
+            <!-- BOTTOM ATHLETE — BLUE (AO) -->
+            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;padding-left:3px;gap:3px;background:${botW ? '#0d47a1' : botL ? '#e0e0e0' : botName ? '#1A2EC8' : '#c6d0f5'};border:1px solid ${botW ? '#4caf50' : '#009'};overflow:hidden">
+              ${seqBot ? `<span style="font-size:8px;color:rgba(255,255,255,0.7);flex-shrink:0;min-width:14px;font-weight:700">${seqBot}</span>` : ''}
+              ${botName ? `<span style="width:14px;height:9px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);flex-shrink:0;font-size:6px;display:inline-flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6)">🏴</span>` : ''}
+              <span style="font-size:9px;font-weight:700;color:${botName ? '#fff' : 'rgba(255,255,255,0.5)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1">${botName || (r === 0 ? 'BYE' : '')}</span>
+              ${botW ? `<span style="font-size:10px;color:#fff;flex-shrink:0;padding-right:4px">✓</span>` : ''}
             </div>
             ${!isLast ? `<div style="position:absolute;right:0;top:${vTop - mt}px;height:${vBot - vTop}px;width:1px;background:#777"></div>` : ''}
             ${!isLast ? `<div style="position:absolute;right:${-CG}px;top:${midY - mt}px;height:1px;width:${CG}px;background:#777"></div>` : ''}
