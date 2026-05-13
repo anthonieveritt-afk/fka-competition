@@ -45,10 +45,12 @@ export default async function BracketPage({
   const eventId = parseInt(id);
   const categoryId = parseInt(catIdStr);
 
+  const { redirect } = await import('next/navigation');
   if (isPrint) {
-    const { redirect } = await import('next/navigation');
     redirect(`/events/${eventId}/brackets/${categoryId}/print`);
   }
+  // Default: redirect to draw page
+  redirect(`/events/${eventId}/brackets/${categoryId}/draw`);
 
   const data = await getData(eventId, categoryId);
   if (!data) return notFound();
