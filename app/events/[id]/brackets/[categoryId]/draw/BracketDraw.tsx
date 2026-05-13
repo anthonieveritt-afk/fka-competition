@@ -11,7 +11,7 @@ interface Props { event: any; category: any; initialAthletes: Athlete[]; eventId
 function bracketSize(n: number) { let s = 4; while (s < n) s *= 2; return s; }
 function shuffle<T>(arr: T[]): T[] { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-function buildBracket(athletes: Athlete[], size: number): BracketState {
+function buildBracket(athletes: (Athlete | null)[], size: number): BracketState {
   const rounds = Math.log2(size);
   const slots: (Athlete | null)[] = new Array(size).fill(null);
   athletes.forEach((a, i) => { slots[i] = a; });
@@ -71,14 +71,15 @@ const SH = 32;   // slot height px
 const COL_W = 175; // column width px
 const COL_GAP = 20; // connector gap px
 
-function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick }: {
+function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side }: {
   slot: MatchSlot; isWinner: boolean; isLoser: boolean; seqNum?: number;
-  canClick: boolean; onClick: () => void;
+  canClick: boolean; onClick: () => void; side: 'red' | 'blue';
 }) {
-  const hasAthlete = !!slot.athleteId;
+  const hasAthlete = !!slot.athleteId && slot.name !== 'BYE' && slot.name !== '—';
   const isBye = slot.name === 'BYE';
-  const bg = isWinner ? '#e8f5e9' : isLoser ? '#f5f5f5' : hasAthlete ? (isBye ? '#fafafa' : '#ffe8e8') : '#fafafa';
-  const borderLeft = isWinner ? '3px solid #2e7d32' : isLoser ? '3px solid #bbb' : hasAthlete && !isBye ? '3px solid #cc0000' : '3px solid #ddd';
+  // Only colour if a real athlete is present
+  const bg = isWinner ? '#e8f5e9' : isLoser ? '#f0f0f0' : hasAthlete ? (side === 'red' ? '#ffe8e8' : '#e8eeff') : '#fff';
+  const borderLeft = isWinner ? '3px solid #2e7d32' : isLoser ? '3px solid #bbb' : hasAthlete ? (side === 'red' ? '3px solid #cc0000' : '3px solid #0000cc') : '3px solid #e0e0e0';
 
   return (
     <div onClick={canClick ? onClick : undefined} style={{
@@ -281,17 +282,14 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                           <div key={m.id} style={{ position: 'absolute', top: mt, left: 0, right: 0, height: matchH }}>
                             {/* Top slot (AKA - red) */}
                             <div style={{ position: 'absolute', top: topY - mt, left: 0, right: 0 }}>
-                              <MatchSlotEl slot={m.top} isWinner={topIsW} isLoser={topIsL} seqNum={seqTop}
+                              <MatchSlotEl slot={m.top} isWinner={topIsW} isLoser={topIsL} seqNum={seqTop} side="red"
                                 canClick={canPlay && !!m.top.athleteId}
                                 onClick={() => m.top.athleteId && handleWinner(m.id, m.top.athleteId)} />
                             </div>
-                            {/* Score boxes */}
-                            <div style={{ position: 'absolute', top: topY - mt + SH, left: 0, right: 0, height: 5, background: '#fff5f5', borderLeft: '3px solid #cc0000' }} />
-                            <div style={{ position: 'absolute', top: botY - mt - 5, left: 0, right: 0, height: 5, background: '#f5f5ff', borderLeft: '3px solid #0000cc' }} />
                             {/* Bottom slot (AO - blue) */}
                             <div style={{ position: 'absolute', top: botY - mt, left: 0, right: 0 }}>
                               <div onClick={canPlay && m.bottom.athleteId ? () => handleWinner(m.id, m.bottom.athleteId!) : undefined}
-                                style={{ height: SH, display: 'flex', alignItems: 'center', background: botIsW ? '#e8f5e9' : botIsL ? '#f5f5f5' : m.bottom.athleteId && m.bottom.name !== 'BYE' ? '#e8eeff' : '#fafafa', border: '1px solid #ccc', borderLeft: `3px solid ${botIsW ? '#2e7d32' : botIsL ? '#bbb' : m.bottom.athleteId && m.bottom.name !== 'BYE' ? '#0000cc' : '#ddd'}`, cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
+                                style={{ height: SH, display: 'flex', alignItems: 'center', background: botIsW ? '#e8f5e9' : botIsL ? '#f0f0f0' : (m.bottom.athleteId && m.bottom.name !== 'BYE' && m.bottom.name !== '—') ? '#e8eeff' : '#fff', border: '1px solid #ccc', borderLeft: `3px solid ${botIsW ? '#2e7d32' : botIsL ? '#bbb' : (m.bottom.athleteId && m.bottom.name !== 'BYE' && m.bottom.name !== '—') ? '#0000cc' : '#e0e0e0'}`, cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
                                 title={canPlay && m.bottom.athleteId ? `Click to advance: ${m.bottom.name}` : ''}>
                                 {seqBot !== undefined && <span style={{ fontSize: 8, color: '#aaa', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqBot}</span>}
                                 <span style={{ width: 1, background: '#ddd', height: '100%', flexShrink: 0 }} />
