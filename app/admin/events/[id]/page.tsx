@@ -84,6 +84,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none',
         }}>Manage Categories</Link>
         <PrintAllBracketsButton eventId={eventId} categories={categories.map((c: any) => ({ id: c.id, name: c.name }))} />
+        <Link href={`/admin/events/${eventId}/timetable`} style={{
+          background: '#1a1a1a', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+        }}>🕐 Timetable</Link>
       </div>
 
       {/* Categories table */}
