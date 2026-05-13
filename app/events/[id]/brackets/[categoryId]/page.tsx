@@ -42,14 +42,14 @@ export default async function BracketPage({
   const sp = await searchParams;
   const isPrint = sp.print === '1';
 
-  // Redirect ?print=1 to the proper print route
+  const eventId = parseInt(id);
+  const categoryId = parseInt(catIdStr);
+
   if (isPrint) {
     const { redirect } = await import('next/navigation');
     redirect(`/events/${eventId}/brackets/${categoryId}/print`);
   }
 
-  const eventId = parseInt(id);
-  const categoryId = parseInt(catIdStr);
   const data = await getData(eventId, categoryId);
   if (!data) return notFound();
 
