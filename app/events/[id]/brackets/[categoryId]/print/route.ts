@@ -121,29 +121,29 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
         matchesHTML += `
           <div style="position:absolute;top:${mt}px;left:0;right:0;height:${mh}px;overflow:visible">
             <!-- AKA top slot -->
-            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:${topW ? '#e8f5e9' : topL ? '#f5f5f5' : topName ? '#ffe8e8' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${topW ? '#2e7d32' : topL ? '#bbb' : '#cc0000'};overflow:hidden">
+            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#ffe8e8;border:1px solid #cc0000;border-left:3px solid #cc0000;overflow:hidden">
               ${seqTop ? `<span style="font-size:8px;color:#888;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqTop}</span>` : ''}
               <span style="width:1px;height:100%;background:#ddd;flex-shrink:0"></span>
-              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topW ? '#1b5e20' : topL ? '#999' : topName ? '#1a0000' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
-              ${topW ? `<span style="font-size:11px;color:#2e7d32;flex-shrink:0;padding-right:4px;font-weight:900">✓</span>` : ''}
+              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topName ? '#000' : '#aaa'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
+              
             </div>
 
             <!-- AO bottom slot -->
-            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:${botW ? '#e8f5e9' : botL ? '#f5f5f5' : botName ? '#e8eeff' : '#fafafa'};border:1px solid #ccc;border-left:3px solid ${botW ? '#2e7d32' : botL ? '#bbb' : '#0000cc'};overflow:hidden">
+            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#e8eeff;border:1px solid #0000cc;border-left:3px solid #0000cc;overflow:hidden">
               ${seqBot ? `<span style="font-size:8px;color:#888;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqBot}</span>` : ''}
               <span style="width:1px;height:100%;background:#ddd;flex-shrink:0"></span>
-              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botW ? '#1b5e20' : botL ? '#999' : botName ? '#00001a' : '#bbb'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
-              ${botW ? `<span style="font-size:11px;color:#2e7d32;flex-shrink:0;padding-right:4px;font-weight:900">✓</span>` : ''}
+              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botName ? '#000' : '#aaa'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
+              
             </div>
             ${!isLast ? `
               <!-- Vertical connector: right border from top-slot-center to bottom-slot-center -->
-              <div style="position:absolute;right:0;top:${vTop - mt}px;height:${vBot - vTop}px;width:2px;background:#1A1A8C"></div>
+              <div style="position:absolute;right:0;top:${vTop - mt}px;height:${vBot - vTop}px;width:2px;background:#000"></div>
             ` : ''}
           </div>`;
 
         // Horizontal line in gap column at midY of this match
         if (!isLast) {
-          gapHTML += `<div style="position:absolute;top:${midY}px;left:0;right:0;height:2px;background:#1A1A8C"></div>`;
+          gapHTML += `<div style="position:absolute;top:${midY}px;left:0;right:0;height:2px;background:#000"></div>`;
         }
       }
 
@@ -192,8 +192,7 @@ body{background:#fff;color:#000;padding:10px}
 <div style="display:flex;gap:8px;align-items:flex-start">
   <div style="display:flex;gap:0;flex:1;overflow-x:auto">${bracketHTML}</div>
   <div style="width:110px;flex-shrink:0;display:flex;flex-direction:column;gap:5px;padding-top:16px">
-    <div style="border:1.5px solid #FFD600;background:#FFFDE7;border-radius:3px;padding:4px 6px">
-      <div style="font-size:8px;font-weight:700;color:#777;margin-bottom:1px">🥇 1st Place</div>
+    <div style="border:1px solid #000;padding:4px 6px"><div style="font-size:8px;font-weight:700">1st Place</div><div style="font-size:9px;font-weight:900;min-height:12px">${winner ? fmt(winner) : '&#8212;'}</div></div>
       <div style="font-size:9px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:12px">${winner ? fmt(winner) : '—'}</div>
     </div>
     <div style="border:1.5px solid #BDBDBD;background:#FAFAFA;border-radius:3px;padding:4px 6px">

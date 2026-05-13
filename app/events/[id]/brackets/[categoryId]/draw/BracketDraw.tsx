@@ -86,8 +86,8 @@ function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side 
   const hasAthlete = !!slot.athleteId && slot.name !== 'BYE' && slot.name !== '—';
   const isBye = slot.name === 'BYE';
   // Only colour if a real athlete is present
-  const bg = isWinner ? '#e8f5e9' : isLoser ? '#f0f0f0' : hasAthlete ? (side === 'red' ? '#ffe8e8' : '#e8eeff') : '#fff';
-  const borderLeft = isWinner ? '3px solid #2e7d32' : isLoser ? '3px solid #bbb' : hasAthlete ? (side === 'red' ? '3px solid #cc0000' : '3px solid #0000cc') : '3px solid #e0e0e0';
+  const bg = hasAthlete ? (side === 'red' ? '#ffe8e8' : '#e8eeff') : '#fff';
+  const borderLeft = hasAthlete ? (side === 'red' ? '3px solid #cc0000' : '3px solid #0000cc') : '3px solid #ddd';
 
   return (
     <div onClick={canClick ? onClick : undefined} style={{
@@ -105,7 +105,7 @@ function MatchSlotEl({ slot, isWinner, isLoser, seqNum, canClick, onClick, side 
       <span style={{ fontSize: 10, fontWeight: hasAthlete && !isBye ? 700 : 400, color: isLoser ? '#aaa' : hasAthlete && !isBye ? '#000' : '#bbb', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>
         {slot.name || '—'}
       </span>
-      {isWinner && <span style={{ color: '#2e7d32', fontSize: 12, flexShrink: 0, fontWeight: 900 }}>✓</span>}
+      
     </div>
   );
 }
@@ -244,7 +244,7 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
       {phase === 'play' && bracket && (
         <div style={{ padding: 16, overflowX: 'auto', overflowY: 'auto', height: 'calc(100vh - 52px)' }}>
           {/* Header */}
-          <div style={{ background: '#1A1A8C', color: '#fff', padding: '8px 16px', borderRadius: 4, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: '#000', color: '#fff', padding: '8px 16px', borderRadius: 4, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 900 }}>{category.name}</div>
               <div style={{ fontSize: 10, opacity: 0.7 }}>{event.name} · {initialAthletes.length} athletes · {size}-draw · Click name to advance winner</div>
@@ -268,7 +268,7 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                 <div key={r} style={{ display: 'flex', gap: 0 }}>
                   <div style={{ width: COL_W, flexShrink: 0 }}>
                     {/* Round label */}
-                    <div style={{ background: '#1A1A8C', color: '#fff', fontSize: 9, fontWeight: 700, textAlign: 'center', padding: '3px 0', marginBottom: 0, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                    <div style={{ background: '#000', color: '#fff', fontSize: 9, fontWeight: 700, textAlign: 'center', padding: '3px 0', marginBottom: 0, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                       {getRoundLabel(r, bracket.rounds)}
                     </div>
                     {/* Matches */}
@@ -299,18 +299,18 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                             {/* Bottom slot (AO - blue) */}
                             <div style={{ position: 'absolute', top: botY - mt, left: 0, right: 0 }}>
                               <div onClick={canPlay && m.bottom.athleteId ? () => handleWinner(m.id, m.bottom.athleteId!) : undefined}
-                                style={{ height: SH, display: 'flex', alignItems: 'center', background: botIsW ? '#e8f5e9' : botIsL ? '#f0f0f0' : (m.bottom.athleteId && m.bottom.name !== 'BYE' && m.bottom.name !== '—') ? '#e8eeff' : '#fff', border: '1px solid #ccc', borderLeft: `3px solid ${botIsW ? '#2e7d32' : botIsL ? '#bbb' : (m.bottom.athleteId && m.bottom.name !== 'BYE' && m.bottom.name !== '—') ? '#0000cc' : '#e0e0e0'}`, cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
+                                style={{ height: SH, display: 'flex', alignItems: 'center', background: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '#e8eeff' : '#fff', border: '1px solid #ccc', borderLeft: (m.bottom.athleteId && m.bottom.name !== 'BYE') ? '3px solid #0000cc' : '3px solid #ddd', cursor: canPlay && m.bottom.athleteId ? 'pointer' : 'default', overflow: 'hidden', gap: 4, paddingRight: 4, boxSizing: 'border-box' }}
                                 title={canPlay && m.bottom.athleteId ? `Click to advance: ${m.bottom.name}` : ''}>
                                 {seqBot !== undefined && <span style={{ fontSize: 8, color: '#aaa', minWidth: 16, textAlign: 'right', flexShrink: 0, fontWeight: 700 }}>{seqBot}</span>}
                                 <span style={{ width: 1, background: '#ddd', height: '100%', flexShrink: 0 }} />
                                 <span style={{ fontSize: 10, fontWeight: m.bottom.athleteId && m.bottom.name !== 'BYE' ? 700 : 400, color: botIsL ? '#aaa' : m.bottom.athleteId && m.bottom.name !== 'BYE' ? '#000' : '#bbb', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', flex: 1 }}>{m.bottom.name || '—'}</span>
-                                {botIsW && <span style={{ color: '#2e7d32', fontSize: 12, flexShrink: 0, fontWeight: 900 }}>✓</span>}
+                                
                               </div>
                             </div>
                             {/* Connector lines */}
                             {!isLast && <>
-                              <div style={{ position: 'absolute', right: 0, top: vTop - mt, height: vBot - vTop, width: 2, background: '#1A1A8C' }} />
-                              <div style={{ position: 'absolute', right: -(COL_GAP), top: midY - mt, height: 2, width: COL_GAP, background: '#1A1A8C' }} />
+                              <div style={{ position: 'absolute', right: 0, top: vTop - mt, height: vBot - vTop, width: 2, background: '#000' }} />
+                              <div style={{ position: 'absolute', right: -(COL_GAP), top: midY - mt, height: 2, width: COL_GAP, background: '#000' }} />
                             </>}
                           </div>
                         );
