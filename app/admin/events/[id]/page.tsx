@@ -131,7 +131,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                     }}>Draw →</Link>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <Link href={`/events/${eventId}/brackets/${c.id}?print=1`} target="_blank" style={{
+                    <Link href={`/events/${eventId}/brackets/${c.id}/print`} target="_blank" style={{
                       background: '#1a1a1a', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
                       textDecoration: 'none',

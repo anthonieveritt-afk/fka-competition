@@ -10,7 +10,7 @@ export default function PrintAllBracketsButton({ eventId, categories }: Props) {
     // Open each bracket in a new tab — browser handles print
     categories.forEach((c, i) => {
       setTimeout(() => {
-        window.open(`/events/${eventId}/brackets/${c.id}?print=1`, '_blank');
+        window.open(`/events/${eventId}/brackets/${c.id}/print`, '_blank');
       }, i * 300); // stagger so they don't all open at once
     });
   };
