@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 export const dynamic = 'force-dynamic';
 
 type Action =
-  | { type: 'timer'; action: 'start' | 'stop' | 'reset'; totalSeconds?: number }
+  | { type: 'timer'; action: 'start' | 'stop' | 'reset' | 'set'; totalSeconds?: number; seconds?: number }
   | { type: 'points'; side: 'red' | 'blue'; points: 1 | 2 | 3; undo?: boolean }
   | { type: 'penalty'; side: 'red' | 'blue'; penalty: string; remove?: boolean }
   | { type: 'senshu'; side: 'red' | 'blue' | null }
@@ -56,6 +56,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         await db.execute(`
           UPDATE comp_kumite_scores
           SET timer_running = FALSE, timer_started_at = NULL, timer_elapsed = 0, updated_at = NOW()
+          WHERE match_id = ${matchId}
+        `);
+      } else if (body.action === 'set' && typeof (body as any).seconds === 'number') {
+        // Set timer to a specific remaining time
+        const totalTime = 180; // default 3 min
+        const elapsed = Math.max(0, totalTime - (body as any).seconds);
+        await db.execute(`
+          UPDATE comp_kumite_scores
+          SET timer_running = FALSE, timer_started_at = NULL, timer_elapsed = ${elapsed}, updated_at = NOW()
           WHERE match_id = ${matchId}
         `);
       }
