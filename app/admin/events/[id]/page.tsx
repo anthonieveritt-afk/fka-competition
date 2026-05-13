@@ -1,164 +1,147 @@
-import { getDb } from '@/lib/db';
-import { events, categories, registrations, matches, athletes } from '@/lib/db/schema';
-import { eq, count } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Pool } from 'pg';
+import PrintAllBracketsButton from './PrintAllBracketsButton';
 
 export const dynamic = 'force-dynamic';
 
+async function getData(eventId: number) {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const client = await pool.connect();
+  try {
+    const evRes = await client.query('SELECT * FROM comp_events WHERE id=$1', [eventId]);
+    if (evRes.rows.length === 0) return null;
+    const event = evRes.rows[0];
+
+    const catRes = await client.query(`
+      SELECT c.*, COUNT(r.id)::int AS reg_count
+      FROM comp_categories c
+      LEFT JOIN comp_registrations r ON r.category_id = c.id
+      WHERE c.event_id = $1
+      GROUP BY c.id ORDER BY c.id
+    `, [eventId]);
+
+    const totalRegs = catRes.rows.reduce((s: number, c: any) => s + (c.reg_count || 0), 0);
+
+    return { event, categories: catRes.rows, totalRegs };
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const db = getDb();
   const { id } = await params;
   const eventId = parseInt(id);
+  const data = await getData(eventId);
+  if (!data) return notFound();
+  const { event, categories, totalRegs } = data;
 
-  let event = null;
-  let categoryList: Array<{
-    id: number; name: string; discipline: string; gender: string; ageGroup: string; weightClass: string | null; beltRange: string | null
-  }> = [];
-  let regCount = 0;
-  let matchList: Array<{
-    id: number; roundType: string; matchNumber: number; tatami: number | null; status: string;
-    redAthleteId: number | null; blueAthleteId: number | null;
-  }> = [];
-
-  try {
-    const [ev] = await db.select().from(events).where(eq(events.id, eventId));
-    event = ev;
-    if (!event) return notFound();
-    categoryList = await db.select().from(categories).where(eq(categories.eventId, eventId));
-    const [rc] = await db.select({ count: count() }).from(registrations).where(eq(registrations.eventId, eventId));
-    regCount = rc?.count ?? 0;
-    matchList = await db.select({
-      id: matches.id,
-      roundType: matches.roundType,
-      matchNumber: matches.matchNumber,
-      tatami: matches.tatami,
-      status: matches.status,
-      redAthleteId: matches.redAthleteId,
-      blueAthleteId: matches.blueAthleteId,
-    }).from(matches).where(eq(matches.eventId, eventId)).limit(20);
-  } catch (e) {
-    // fallback
-    if (!event) {
-      return (
-        <div className="p-8">
-          <div className="card text-center py-12">
-            <div className="text-white">Database not connected. Check your DATABASE_URL.</div>
-          </div>
-        </div>
-      );
-    }
-  }
-
-  if (!event) return notFound();
-
-  const statusColor: Record<string, string> = {
-    draft: 'badge-gray',
-    registration: 'badge-blue',
-    live: 'badge-green',
-    completed: 'badge-orange',
-    scheduled: 'badge-gray',
-    complete: 'badge-green',
+  const disciplineColor: Record<string, string> = {
+    kumite: '#ef4444', kata: '#0066cc', slam_man: '#f59e0b',
+  };
+  const disciplineLabel: Record<string, string> = {
+    kumite: 'Kumite', kata: 'Kata', slam_man: 'Slam-Man',
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <Link href="/admin/events" className="text-sm" style={{ color: '#0066cc' }}>← Events</Link>
-        <div className="flex items-center gap-3 mt-2">
-          <h1 className="text-2xl font-bold text-white">{event.name}</h1>
-          <span className={`badge ${statusColor[event.status]}`}>{event.status}</span>
+    <div style={{ padding: '32px 24px', minHeight: '100vh', background: '#0a0a0a' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <Link href="/admin/events" style={{ color: '#0066cc', fontSize: 13, textDecoration: 'none' }}>← Events</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+          <h1 style={{ color: '#f5f5f5', fontSize: 24, fontWeight: 700 }}>{event.name}</h1>
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+            background: event.status === 'registration' ? '#001a33' : '#1a1a1a',
+            color: event.status === 'registration' ? '#0066cc' : '#888',
+            border: '1px solid currentColor', textTransform: 'uppercase',
+          }}>{event.status}</span>
         </div>
-        <p className="text-sm mt-1" style={{ color: '#888' }}>{event.date} · {event.location} · {event.federation}</p>
+        <p style={{ color: '#888', fontSize: 14, marginTop: 4 }}>
+          {event.date} · {event.location} · {event.federation}
+        </p>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="card text-center">
-          <div className="text-2xl font-bold text-white">{categoryList.length}</div>
-          <div className="text-xs mt-1" style={{ color: '#888' }}>Categories</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-2xl font-bold text-white">{regCount}</div>
-          <div className="text-xs mt-1" style={{ color: '#888' }}>Registrations</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-2xl font-bold text-white">{matchList.length}</div>
-          <div className="text-xs mt-1" style={{ color: '#888' }}>Matches</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Categories */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-white">Categories</h2>
-            <Link href={`/admin/events/${event.id}/categories`} className="btn-primary text-sm py-1">Manage</Link>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        {[
+          { label: 'Categories', val: categories.length, color: '#0066cc' },
+          { label: 'Athletes registered', val: totalRegs, color: '#22c55e' },
+          { label: 'Matches', val: 0, color: '#f59e0b' },
+        ].map(({ label, val, color }) => (
+          <div key={label} style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '16px', textAlign: 'center' }}>
+            <div style={{ color, fontSize: 28, fontWeight: 900 }}>{val}</div>
+            <div style={{ color: '#888', fontSize: 12, marginTop: 2 }}>{label}</div>
           </div>
-          {categoryList.length === 0 ? (
-            <div className="text-sm py-6 text-center" style={{ color: '#555' }}>
-              No categories. <Link href={`/admin/events/${event.id}/categories`} style={{ color: '#0066cc' }}>Add categories →</Link>
-            </div>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Discipline</th>
-                  <th>Age Group</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryList.map(c => (
-                  <tr key={c.id}>
-                    <td>
-                      <Link href={`/events/${eventId}/brackets/${c.id}`} className="text-white hover:underline">{c.name}</Link>
-                    </td>
-                    <td><span className={`badge ${c.discipline === 'kumite' ? 'badge-red' : 'badge-blue'}`}>{c.discipline}</span></td>
-                    <td style={{ color: '#aaa' }}>{c.ageGroup}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Matches */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-white">Recent Matches</h2>
-          </div>
-          {matchList.length === 0 ? (
-            <div className="text-sm py-6 text-center" style={{ color: '#555' }}>No matches scheduled yet.</div>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Round</th>
-                  <th>Tatami</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {matchList.map(m => (
-                  <tr key={m.id}>
-                    <td style={{ color: '#888' }}>{m.matchNumber}</td>
-                    <td style={{ color: '#aaa' }} className="capitalize">{m.roundType}</td>
-                    <td style={{ color: '#aaa' }}>{m.tatami ? `T${m.tatami}` : '—'}</td>
-                    <td><span className={`badge ${statusColor[m.status] || 'badge-gray'}`}>{m.status}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        ))}
       </div>
 
-      {/* Actions */}
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link href={`/admin/events/${event.id}/categories`} className="btn-secondary">Manage Categories</Link>
-        <Link href={`/events/${event.id}`} className="btn-secondary">Public View</Link>
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Link href={`/admin/events/${eventId}/categories`} style={{
+          background: '#0066cc', color: '#fff', borderRadius: 8,
+          padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+        }}>Manage Categories</Link>
+        <PrintAllBracketsButton eventId={eventId} categories={categories.map((c: any) => ({ id: c.id, name: c.name }))} />
+      </div>
+
+      {/* Categories table */}
+      <div style={{ background: '#141414', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ color: '#f5f5f5', fontSize: 16, fontWeight: 700 }}>Event Categories</h2>
+          <span style={{ color: '#888', fontSize: 13 }}>{categories.length} categories</span>
+        </div>
+
+        {categories.length === 0 ? (
+          <div style={{ padding: 48, textAlign: 'center', color: '#555' }}>No categories found.</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                {['Category', 'Discipline', 'Age Group', 'Athletes', 'Bracket', 'Print'].map(h => (
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((c: any) => (
+                <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <td style={{ padding: '12px 16px', color: '#f5f5f5', fontWeight: 600, fontSize: 14 }}>{c.name}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                      background: (disciplineColor[c.discipline] ?? '#888') + '22',
+                      color: disciplineColor[c.discipline] ?? '#888',
+                      border: `1px solid ${(disciplineColor[c.discipline] ?? '#888')}44`,
+                    }}>
+                      {disciplineLabel[c.discipline] ?? c.discipline}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 16px', color: '#aaa', fontSize: 14 }}>{c.age_group}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{
+                      color: c.reg_count > 0 ? '#22c55e' : '#555',
+                      fontWeight: 700, fontSize: 15,
+                    }}>{c.reg_count}</span>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <Link href={`/events/${eventId}/brackets/${c.id}`} style={{
+                      color: '#0066cc', fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                    }}>View →</Link>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <Link href={`/events/${eventId}/brackets/${c.id}?print=1`} target="_blank" style={{
+                      background: '#1a1a1a', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                      textDecoration: 'none',
+                    }}>🖨 Print</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

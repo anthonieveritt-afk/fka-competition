@@ -1,178 +1,180 @@
-import { getDb } from '@/lib/db';
-import { events, categories, matches, athletes, registrations } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import Link from 'next/link';
+import { Pool } from 'pg';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import PrintBracketButton from './PrintBracketButton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BracketPage({ params }: { params: Promise<{ id: string; categoryId: string }> }) {
-  const db = getDb();
-  const { id, categoryId: categoryIdStr } = await params;
-  const eventId = parseInt(id);
-  const categoryId = parseInt(categoryIdStr);
-
-  let event = null;
-  let category = null;
-  let matchList: Array<{
-    id: number; roundType: string; matchNumber: number; tatami: number | null;
-    status: string; redAthleteId: number | null; blueAthleteId: number | null;
-    winnerId: number | null; method: string | null;
-  }> = [];
-  let athleteMap: Record<number, { firstName: string; surname: string; club: string }> = {};
-  let registeredAthletes: Array<{ id: number; firstName: string; surname: string; club: string; grade: string | null }> = [];
-
+async function getData(eventId: number, categoryId: number) {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const client = await pool.connect();
   try {
-    const [ev] = await db.select().from(events).where(eq(events.id, eventId));
-    event = ev;
-    const [cat] = await db.select().from(categories).where(eq(categories.id, categoryId));
-    category = cat;
+    const evRes = await client.query('SELECT * FROM comp_events WHERE id=$1', [eventId]);
+    const catRes = await client.query('SELECT * FROM comp_categories WHERE id=$1', [categoryId]);
+    if (!evRes.rows[0] || !catRes.rows[0]) return null;
 
-    if (!event || !category) return notFound();
+    const athleteRes = await client.query(`
+      SELECT a.id, a.first_name, a.surname, a.club, a.grade, a.ekf_licence, a.date_of_birth
+      FROM comp_athletes a
+      JOIN comp_registrations r ON r.athlete_id = a.id
+      WHERE r.category_id = $1 AND r.event_id = $2
+      ORDER BY a.surname, a.first_name
+    `, [categoryId, eventId]);
 
-    matchList = await db.select({
-      id: matches.id, roundType: matches.roundType, matchNumber: matches.matchNumber,
-      tatami: matches.tatami, status: matches.status,
-      redAthleteId: matches.redAthleteId, blueAthleteId: matches.blueAthleteId,
-      winnerId: matches.winnerId, method: matches.method,
-    }).from(matches).where(and(eq(matches.categoryId, categoryId), eq(matches.eventId, eventId)));
-
-    // Get registered athletes
-    const regs = await db.select({
-      athleteId: registrations.athleteId,
-    }).from(registrations).where(and(eq(registrations.categoryId, categoryId), eq(registrations.eventId, eventId)));
-
-    if (regs.length > 0) {
-      const ids = regs.map(r => r.athleteId);
-      const allAthletes = await db.select({
-        id: athletes.id, firstName: athletes.firstName, surname: athletes.surname,
-        club: athletes.club, grade: athletes.grade,
-      }).from(athletes);
-      registeredAthletes = allAthletes.filter(a => ids.includes(a.id));
-      allAthletes.forEach(a => { athleteMap[a.id] = a; });
-    }
-
-    // Build athlete map from matches too
-    const allAthletes = await db.select({
-      id: athletes.id, firstName: athletes.firstName, surname: athletes.surname, club: athletes.club,
-    }).from(athletes);
-    allAthletes.forEach(a => { athleteMap[a.id] = a; });
-
-  } catch (e) {}
-
-  if (!event || !category) {
-    return <div className="p-8 text-white">Not found or database not connected.</div>;
+    return {
+      event: evRes.rows[0],
+      category: catRes.rows[0],
+      athletes: athleteRes.rows,
+    };
+  } finally {
+    client.release();
+    await pool.end();
   }
+}
 
-  const getAthlete = (id: number | null) => id ? athleteMap[id] : null;
+export default async function BracketPage({
+  params, searchParams
+}: {
+  params: Promise<{ id: string; categoryId: string }>;
+  searchParams: Promise<{ print?: string }>;
+}) {
+  const { id, categoryId: catIdStr } = await params;
+  const sp = await searchParams;
+  const isPrint = sp.print === '1';
+
+  const eventId = parseInt(id);
+  const categoryId = parseInt(catIdStr);
+  const data = await getData(eventId, categoryId);
+  if (!data) return notFound();
+
+  const { event, category, athletes } = data;
+
+  const disciplineLabel: Record<string, string> = { kumite: 'Kumite', kata: 'Kata', slam_man: 'Slam-Man' };
 
   return (
-    <div className="min-h-screen px-4 py-8">
-      {/* Print button */}
-      <div className="no-print flex items-center justify-between max-w-5xl mx-auto mb-6">
-        <Link href={`/events/${eventId}`} className="text-sm" style={{ color: '#0066cc' }}>← Event</Link>
-        <button className="btn-secondary" onClick={() => window.print()}>🖨️ Print / Save PDF</button>
-      </div>
+    <>
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+          .bracket-card { border: 1px solid #ccc !important; background: white !important; }
+          .athlete-row { border-bottom: 1px solid #eee !important; color: black !important; }
+          .header-section { color: black !important; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 12px; }
+          .score-box { border: 1px solid #ccc; min-width: 40px; height: 24px; display: inline-block; }
+        }
+      `}</style>
 
-      {/* Printable content */}
-      <div className="max-w-5xl mx-auto" id="bracket-print">
-        <div className="text-center mb-8">
-          <div className="text-4xl mb-2">🥋</div>
-          <h1 className="text-2xl font-bold text-white">{event.name}</h1>
-          <h2 className="text-xl mt-1" style={{ color: '#aaa' }}>{category.name}</h2>
-          <p className="text-sm mt-1" style={{ color: '#666' }}>{event.date} · {event.location}</p>
-          <p className="text-sm" style={{ color: '#666' }}>{category.ageGroup} · {category.beltRange} {category.weightClass ? `· ${category.weightClass}` : ''}</p>
+      {isPrint && <PrintBracketButton />}
+
+      <div style={{ padding: isPrint ? '20px' : '32px 24px', minHeight: '100vh', background: isPrint ? 'white' : '#0a0a0a' }}>
+
+        {/* Nav (hidden on print) */}
+        <div className="no-print" style={{ marginBottom: 20, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href={`/admin/events/${eventId}`} style={{ color: '#0066cc', fontSize: 13, textDecoration: 'none' }}>← Back to Event</Link>
+          <Link href={`/events/${eventId}/brackets/${categoryId}?print=1`} target="_blank" style={{
+            background: '#141414', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 700, textDecoration: 'none', marginLeft: 'auto',
+          }}>🖨 Print this bracket</Link>
         </div>
 
-        {/* Registered athletes */}
-        {registeredAthletes.length > 0 && (
-          <div className="card mb-6">
-            <h3 className="font-semibold text-white mb-4">Registered Athletes ({registeredAthletes.length})</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Name</th>
-                  <th>Club</th>
-                  <th>Grade</th>
-                  <th className="no-print">Score</th>
-                  <th className="no-print">Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {registeredAthletes.map((a, i) => (
-                  <tr key={a.id}>
-                    <td style={{ color: '#666' }}>{i + 1}</td>
-                    <td className="font-medium text-white">{a.firstName} {a.surname}</td>
-                    <td style={{ color: '#aaa' }}>{a.club}</td>
-                    <td style={{ color: '#aaa' }}>{a.grade}</td>
-                    <td className="no-print" style={{ color: '#444' }}>____</td>
-                    <td className="no-print" style={{ color: '#444' }}>____________________</td>
+        {/* Header */}
+        <div className="header-section" style={{ marginBottom: 24, borderBottom: isPrint ? '2px solid #000' : '1px solid rgba(255,255,255,0.08)', paddingBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: isPrint ? 11 : 12, fontWeight: 700, color: isPrint ? '#333' : '#888', textTransform: 'uppercase', letterSpacing: 1 }}>
+              {event.name} · {event.date}
+            </span>
+          </div>
+          <h1 style={{ fontSize: isPrint ? 22 : 26, fontWeight: 900, color: isPrint ? '#000' : '#f5f5f5', margin: '4px 0' }}>
+            {category.name}
+          </h1>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 20,
+              background: isPrint ? '#eee' : 'rgba(255,255,255,0.08)',
+              color: isPrint ? '#333' : '#f5f5f5',
+            }}>
+              {disciplineLabel[category.discipline] ?? category.discipline}
+            </span>
+            <span style={{ fontSize: 13, color: isPrint ? '#555' : '#888' }}>
+              {category.age_group} · {category.gender}
+              {category.belt_range ? ` · ${category.belt_range}` : ''}
+              {category.weight_class ? ` · ${category.weight_class}` : ''}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: isPrint ? '#000' : '#f5f5f5' }}>
+              {athletes.length} athlete{athletes.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
+
+        {athletes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 48, color: '#555' }}>
+            No athletes registered in this category.
+          </div>
+        ) : (
+          <>
+            {/* Entry list / draw */}
+            <div className="bracket-card" style={{
+              background: isPrint ? 'white' : '#141414',
+              borderRadius: isPrint ? 0 : 12,
+              border: isPrint ? 'none' : '1px solid rgba(255,255,255,0.06)',
+              overflow: 'hidden',
+            }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: isPrint ? '#f5f5f5' : '#1a1a1a' }}>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: isPrint ? 11 : 12, fontWeight: 700, color: isPrint ? '#333' : '#888', textTransform: 'uppercase', letterSpacing: 1 }}>#</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: isPrint ? 11 : 12, fontWeight: 700, color: isPrint ? '#333' : '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Athlete</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: isPrint ? 11 : 12, fontWeight: 700, color: isPrint ? '#333' : '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Club</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: isPrint ? 11 : 12, fontWeight: 700, color: isPrint ? '#333' : '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Grade</th>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: isPrint ? 11 : 12, fontWeight: 700, color: isPrint ? '#333' : '#888', textTransform: 'uppercase', letterSpacing: 1 }}>EKF Licence</th>
+                    {isPrint && (
+                      <>
+                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#333', textTransform: 'uppercase' }}>Round 1</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#333', textTransform: 'uppercase' }}>Round 2</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#333', textTransform: 'uppercase' }}>Final</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#333', textTransform: 'uppercase' }}>Place</th>
+                      </>
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Match bracket */}
-        {matchList.length > 0 && (
-          <div className="card">
-            <h3 className="font-semibold text-white mb-4">Draw / Bracket</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Match</th>
-                  <th>Round</th>
-                  <th>Red</th>
-                  <th>Blue</th>
-                  <th>Tatami</th>
-                  <th>Status</th>
-                  <th>Winner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {matchList.sort((a, b) => a.matchNumber - b.matchNumber).map(m => {
-                  const red = getAthlete(m.redAthleteId);
-                  const blue = getAthlete(m.blueAthleteId);
-                  const winner = getAthlete(m.winnerId);
-                  return (
-                    <tr key={m.id}>
-                      <td style={{ color: '#888' }}>{m.matchNumber}</td>
-                      <td style={{ color: '#aaa' }} className="capitalize">{m.roundType}</td>
-                      <td>
-                        {red ? (
-                          <span className="text-white">{red.surname}<span style={{ color: '#666' }}> ({red.club})</span></span>
-                        ) : <span style={{ color: '#444' }}>TBD</span>}
+                </thead>
+                <tbody>
+                  {athletes.map((a: any, idx: number) => (
+                    <tr key={a.id} className="athlete-row" style={{
+                      borderBottom: `1px solid ${isPrint ? '#eee' : 'rgba(255,255,255,0.04)'}`,
+                      background: isPrint ? (idx % 2 === 0 ? 'white' : '#fafafa') : 'transparent',
+                    }}>
+                      <td style={{ padding: '10px 14px', color: isPrint ? '#333' : '#888', fontSize: 14, fontWeight: 700 }}>{idx + 1}</td>
+                      <td style={{ padding: '10px 14px', color: isPrint ? '#000' : '#f5f5f5', fontWeight: 700, fontSize: 14 }}>
+                        {a.first_name} {a.surname}
                       </td>
-                      <td>
-                        {blue ? (
-                          <span className="text-white">{blue.surname}<span style={{ color: '#666' }}> ({blue.club})</span></span>
-                        ) : <span style={{ color: '#444' }}>TBD</span>}
-                      </td>
-                      <td style={{ color: '#888' }}>{m.tatami ? `T${m.tatami}` : '—'}</td>
-                      <td>
-                        <span className={`badge ${m.status === 'complete' ? 'badge-green' : m.status === 'live' ? 'badge-orange' : 'badge-gray'}`}>{m.status}</span>
-                      </td>
-                      <td>
-                        {winner ? <span className="font-medium" style={{ color: '#4dffaa' }}>{winner.surname}</span> : '—'}
-                      </td>
+                      <td style={{ padding: '10px 14px', color: isPrint ? '#333' : '#aaa', fontSize: 14 }}>{a.club}</td>
+                      <td style={{ padding: '10px 14px', color: isPrint ? '#333' : '#aaa', fontSize: 14 }}>{a.grade ?? '—'}</td>
+                      <td style={{ padding: '10px 14px', color: isPrint ? '#333' : '#aaa', fontSize: 13 }}>{a.ekf_licence ?? '—'}</td>
+                      {isPrint && (
+                        <>
+                          <td style={{ padding: '10px 14px', textAlign: 'center' }}><span className="score-box" style={{ border: '1px solid #ccc', minWidth: 40, height: 24, display: 'inline-block' }}></span></td>
+                          <td style={{ padding: '10px 14px', textAlign: 'center' }}><span className="score-box" style={{ border: '1px solid #ccc', minWidth: 40, height: 24, display: 'inline-block' }}></span></td>
+                          <td style={{ padding: '10px 14px', textAlign: 'center' }}><span className="score-box" style={{ border: '1px solid #ccc', minWidth: 40, height: 24, display: 'inline-block' }}></span></td>
+                          <td style={{ padding: '10px 14px', textAlign: 'center' }}><span className="score-box" style={{ border: '1px solid #ccc', minWidth: 40, height: 24, display: 'inline-block' }}></span></td>
+                        </>
+                      )}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        {matchList.length === 0 && registeredAthletes.length === 0 && (
-          <div className="card text-center py-12">
-            <div className="text-white">Draw not yet published for this category.</div>
-          </div>
+            {isPrint && (
+              <div style={{ marginTop: 24, fontSize: 11, color: '#999', borderTop: '1px solid #eee', paddingTop: 12 }}>
+                {event.name} · Printed {new Date().toLocaleDateString('en-GB')} · {athletes.length} athletes
+              </div>
+            )}
+          </>
         )}
       </div>
-
-
-    </div>
+    </>
   );
 }
