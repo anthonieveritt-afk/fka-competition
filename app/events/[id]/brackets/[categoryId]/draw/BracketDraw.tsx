@@ -145,9 +145,7 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
   }, [categoryId, eventId, athleteMap, event, category]);
 
   const startBracket = () => {
-    const b = resolveNames(buildBracket(seeds.filter(Boolean) as Athlete[], size), athleteMap);
-    // Re-build with full slots
-    const b2 = resolveNames(buildBracket(seeds as (Athlete | null)[], size), athleteMap);
+    const b2 = resolveNames(buildBracket(seeds, size), athleteMap);
     setBracket(b2); setPhase('play'); setLocked(true);
     save(b2, true);
   };
