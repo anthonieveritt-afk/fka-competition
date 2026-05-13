@@ -126,9 +126,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                     }}>{c.reg_count}</span>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <Link href={`/events/${eventId}/brackets/${c.id}`} style={{
+                    <Link href={`/events/${eventId}/brackets/${c.id}/draw`} style={{
                       color: '#0066cc', fontSize: 13, fontWeight: 600, textDecoration: 'none',
-                    }}>View →</Link>
+                    }}>Draw →</Link>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <Link href={`/events/${eventId}/brackets/${c.id}?print=1`} target="_blank" style={{

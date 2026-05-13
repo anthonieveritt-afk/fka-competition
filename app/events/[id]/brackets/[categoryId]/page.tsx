@@ -57,13 +57,15 @@ export default async function BracketPage({
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; color: black !important; }
-          .bracket-card { border: 1px solid #ccc !important; background: white !important; }
-          .athlete-row { border-bottom: 1px solid #eee !important; color: black !important; }
-          .header-section { color: black !important; }
+          * { background: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { margin: 0; padding: 0; }
+          @page { size: A4 landscape; margin: 8mm; }
           table { width: 100%; border-collapse: collapse; }
-          th, td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 12px; }
-          .score-box { border: 1px solid #ccc; min-width: 40px; height: 24px; display: inline-block; }
+          th { background: #f0f0f0 !important; font-size: 11px; padding: 6px 10px; border-bottom: 2px solid #333 !important; }
+          td { padding: 8px 10px; border-bottom: 1px solid #ddd !important; font-size: 12px; }
+          .score-box { border: 1px solid #ccc !important; min-width: 40px; height: 20px; display: inline-block; }
+          h1 { font-size: 18px !important; margin: 0 0 4px 0; }
+          a { text-decoration: none; color: black !important; }
         }
       `}</style>
 

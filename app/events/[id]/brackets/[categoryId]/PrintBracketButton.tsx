@@ -1,18 +1,24 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function PrintBracketButton() {
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
-    // Auto-trigger print dialog when ?print=1
-    const timer = setTimeout(() => window.print(), 800);
+    // Wait for full render before triggering print
+    const timer = setTimeout(() => {
+      setReady(true);
+      window.print();
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div className="no-print" style={{
       position: 'fixed', top: 16, right: 16, zIndex: 100,
-      display: 'flex', gap: 8,
+      display: 'flex', gap: 8, alignItems: 'center',
     }}>
+      {!ready && <span style={{ color: '#888', fontSize: 13 }}>Loading…</span>}
       <button
         onClick={() => window.print()}
         style={{
