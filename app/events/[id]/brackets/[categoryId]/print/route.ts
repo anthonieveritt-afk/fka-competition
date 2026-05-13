@@ -63,10 +63,12 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     };
 
     // Layout constants
-    const AH = 22;     // athlete row height
-    const SH = 9;      // score box height
-    const CW = 148;    // column width
-    const CG = 14;     // gap between columns
+    // Scale slot height to fill the printable area (A4 landscape ≈ 680px usable after header/footer)
+    const TARGET_H = 680;
+    const AH = Math.max(22, Math.floor((TARGET_H / size) * 0.6)); // athlete row height
+    const SH = Math.max(8, Math.floor(AH * 0.35));                // score box height
+    const CW = Math.min(200, Math.max(148, Math.floor(650 / rounds))); // column width
+    const CG = Math.max(12, Math.floor(CW * 0.1));                 // gap between columns
     const TH = size * AH; // total bracket height
 
     // Build HTML for each round column
@@ -154,6 +156,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 body{background:#fff;color:#000;padding:10px}
 @page{size:A4 landscape;margin:6mm}
 @media print{.np{display:none!important}body{padding:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+#bracket-wrap{transform-origin:top left}
+@media screen{body{max-width:297mm}}
 </style>
 </head>
 <body>
@@ -204,7 +208,19 @@ body{background:#fff;color:#000;padding:10px}
   <span>${category.name} · ${athletes.length} athletes · ${size}-draw</span>
   <span>FKA Competition System · ${new Date().toLocaleDateString('en-GB')}</span>
 </div>
-<script>window.addEventListener('load',function(){setTimeout(function(){window.print()},900)});</script>
+<script>
+function scaleBracket(){
+  var wrap=document.getElementById('bracket-wrap');
+  if(!wrap)return;
+  var avail=document.body.clientWidth-130-20; // subtract sidebar + padding
+  var bw=wrap.scrollWidth;
+  if(bw>avail){wrap.style.transform='scale('+(avail/bw)+')';wrap.style.transformOrigin='top left';wrap.parentElement.style.height=(wrap.scrollHeight*(avail/bw))+'px';}
+}
+window.addEventListener('load',function(){
+  scaleBracket();
+  setTimeout(function(){window.print();},1000);
+});
+</script>
 </body>
 </html>`;
 
