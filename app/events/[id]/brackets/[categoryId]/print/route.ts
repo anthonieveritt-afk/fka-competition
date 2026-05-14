@@ -68,8 +68,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const OUTER_GAP = 18;
     const AH = 26; // FIXED slot height — never scales up, always tight (Apple-style)
     const R1_MH = AH * 2 + OUTER_GAP;
-    const CW = Math.min(190, Math.max(130, Math.floor(600 / rounds)));
-    const CG = 20;
+    // Fit all rounds into ~870px (A4 landscape minus sidebar and margins)
+    const totalBracketWidth = 870;
+    const CW = Math.max(80, Math.floor((totalBracketWidth - rounds * 16) / rounds));
+    const CG = 16;
     const TH = (size / 2) * R1_MH;
 
     // Build HTML for each round column
@@ -174,9 +176,13 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
 body{background:#fff;color:#000;padding:10px}
 @page{size:A4 landscape;margin:6mm}
-@media print{.np{display:none!important}body{padding:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-#bracket-wrap{transform-origin:top left}
-@media screen{body{max-width:297mm}}
+@media print{
+  .np{display:none!important}
+  body{padding:0;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #page-container{transform-origin:top left}
+}
+@media screen{body{padding:8px}}
 </style>
 </head>
 <body>
@@ -194,7 +200,7 @@ body{background:#fff;color:#000;padding:10px}
     <div style="opacity:0.7;margin-top:1px">${athletes.length} Athletes · ${size}-Draw</div>
   </div>
 </div>
-<div style="display:flex;gap:10px;align-items:flex-start">
+<div id="page-container" style="display:flex;gap:10px;align-items:flex-start">
   <!-- Bracket takes all remaining width -->
   <div id="bracket-wrap" style="flex:1;overflow:hidden">${bracketHTML}</div>
 
@@ -245,16 +251,27 @@ body{background:#fff;color:#000;padding:10px}
   <span>FKA Competition System · ${new Date().toLocaleDateString('en-GB')}</span>
 </div>
 <script>
-function scaleBracket(){
-  var wrap=document.getElementById('bracket-wrap');
-  if(!wrap)return;
-  var avail=document.body.clientWidth-120-20; // subtract sidebar + padding
-  var bw=wrap.scrollWidth;
-  if(bw>avail){wrap.style.transform='scale('+(avail/bw)+')';wrap.style.transformOrigin='top left';wrap.parentElement.style.height=(wrap.scrollHeight*(avail/bw))+'px';}
+function fitToPage(){
+  var container = document.getElementById('page-container');
+  if(!container) return;
+  // A4 landscape usable area in px (at screen resolution for scaling reference)
+  var pageW = document.documentElement.clientWidth || 1060;
+  var pageH = document.documentElement.clientHeight || 730;
+  var contentW = container.scrollWidth;
+  var contentH = container.scrollHeight;
+  var scaleX = pageW / contentW;
+  var scaleY = pageH / contentH;
+  var scale = Math.min(scaleX, scaleY, 1); // never scale up, only down
+  if(scale < 0.99){
+    container.style.transform = 'scale('+scale+')';
+    container.style.transformOrigin = 'top left';
+    document.body.style.height = (contentH * scale) + 'px';
+    document.body.style.overflow = 'hidden';
+  }
 }
 window.addEventListener('load',function(){
-  scaleBracket();
-  setTimeout(function(){window.print();},1000);
+  fitToPage();
+  setTimeout(function(){fitToPage(); window.print();}, 800);
 });
 </script>
 </body>
