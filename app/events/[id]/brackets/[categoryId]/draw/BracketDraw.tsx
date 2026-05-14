@@ -265,13 +265,13 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
               const isLast = r === bracket.rounds - 1;
 
               return (
-                <div key={r} style={{ display: 'flex', gap: 0 }}>
-                  <div style={{ width: COL_W, flexShrink: 0 }}>
+                <div key={r} style={{ display: 'flex', gap: 0, marginRight: isLast ? 0 : COL_GAP }}>
+                  <div style={{ width: COL_W + (isLast ? 0 : COL_GAP), flexShrink: 0 }}>
                     {/* Round label */}
                     <div style={{ background: '#000', color: '#fff', fontSize: 9, fontWeight: 700, textAlign: 'center', padding: '3px 0', marginBottom: 0, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                       {getRoundLabel(r, bracket.rounds)}
                     </div>
-                    {/* Matches */}
+                    {/* Matches + Connectors */}
                     <div style={{ position: 'relative', height: totalH }}>
                       {rMatches.map(m => {
                         const mt = m.matchIndex * matchH;
@@ -308,33 +308,40 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                               </div>
                             </div>
 
+                          {/* Connector lines — drawn in the extra COL_GAP space to the right */}
+                          {!isLast && (() => {
+                            const barStart = COL_W;
+                            const barEnd = COL_W + Math.floor(COL_GAP * 0.5);
+                            return <>
+                              {/* C-bracket using borders: top=from red, right=vertical bar, bottom=from blue */}
+                              <div style={{
+                                position: 'absolute',
+                                top: vTop - mt,
+                                left: barStart,
+                                width: barEnd - barStart,
+                                height: vBot - vTop,
+                                borderTop: '2px solid #000',
+                                borderRight: '2px solid #000',
+                                borderBottom: '2px solid #000',
+                                boxSizing: 'border-box',
+                              }} />
+                              {/* Midpoint horizontal from vertical bar rightward */}
+                              <div style={{
+                                position: 'absolute',
+                                top: midY - mt - 1,
+                                left: barEnd,
+                                right: 0,
+                                height: 2,
+                                background: '#000',
+                              }} />
+                            </>;
+                          })()}
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                  {!isLast && (
-                    <div style={{ width: COL_GAP, flexShrink: 0, position: 'relative', height: totalH }}>
-                      {rMatches.map(m => {
-                        const mTop2 = m.matchIndex * matchH;
-                        const slotPad2 = (matchH - SH * 2) / 2;
-                        const topY2 = mTop2 + slotPad2;
-                        const botY2 = topY2 + SH;
-                        const vTop2 = topY2 + SH / 2;
-                        const vBot2 = botY2 + SH / 2;
-                        const midY2 = topY2 + SH;
-                        const barW = Math.floor(COL_GAP * 0.5);
-                        return (
-                          <div key={m.id}>
-                            {/* C-bracket: top border (from red) + right border (vertical) + bottom border (from blue) */}
-                            <div style={{ position: 'absolute', top: vTop2, left: 0, width: barW, height: vBot2 - vTop2, borderTop: '2px solid #000', borderRight: '2px solid #000', borderBottom: '2px solid #000', boxSizing: 'border-box' }} />
-                            {/* Midpoint horizontal to next column */}
-                            <div style={{ position: 'absolute', top: midY2 - 1, left: barW, right: 0, height: 2, background: '#000' }} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+
                 </div>
               );
             })}

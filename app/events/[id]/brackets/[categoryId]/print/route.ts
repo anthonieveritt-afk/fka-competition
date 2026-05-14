@@ -121,18 +121,18 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
         matchesHTML += `
           <div style="position:absolute;top:${mt}px;left:0;right:0;height:${mh}px;overflow:visible">
             <!-- AKA top slot -->
-            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#ffe8e8;border:1px solid #a00000;border-left:3px solid #a00000;overflow:hidden">
-              ${seqTop ? `<span style="font-size:8px;color:rgba(255,255,255,0.6);flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqTop}</span>` : ''}
-              <span style="width:1px;height:100%;background:rgba(255,255,255,0.3);flex-shrink:0"></span>
-              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topName ? '#fff' : 'rgba(255,255,255,0.4)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
+            <div style="position:absolute;top:${topY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#ffe8e8;border:1px solid #cc0000;border-left:3px solid #cc0000;overflow:hidden">
+              ${seqTop ? `<span style="font-size:8px;color:#333;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqTop}</span>` : ''}
+              <span style="width:1px;height:100%;background:#ccc;flex-shrink:0"></span>
+              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${topName ? '700' : '400'};color:${topName ? '#000' : '#aaa'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${topName || (r === 0 ? 'BYE' : '')}</span>
               
             </div>
 
             <!-- AO bottom slot -->
-            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#e8eeff;border:1px solid #000099;border-left:3px solid #000099;overflow:hidden">
-              ${seqBot ? `<span style="font-size:8px;color:rgba(255,255,255,0.6);flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqBot}</span>` : ''}
-              <span style="width:1px;height:100%;background:rgba(255,255,255,0.3);flex-shrink:0"></span>
-              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botName ? '#fff' : 'rgba(255,255,255,0.4)'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
+            <div style="position:absolute;top:${botY - mt}px;left:0;right:0;height:${AH}px;display:flex;align-items:center;background:#e8eeff;border:1px solid #0000cc;border-left:3px solid #0000cc;overflow:hidden">
+              ${seqBot ? `<span style="font-size:8px;color:#333;flex-shrink:0;min-width:18px;text-align:right;padding-right:3px;font-weight:700">${seqBot}</span>` : ''}
+              <span style="width:1px;height:100%;background:#ccc;flex-shrink:0"></span>
+              <span style="font-size:${Math.max(8, Math.min(10, AH-10))}px;font-weight:${botName ? '700' : '400'};color:${botName ? '#000' : '#aaa'};overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;padding:0 4px">${botName || (r === 0 ? 'BYE' : '')}</span>
               
             </div>
 
