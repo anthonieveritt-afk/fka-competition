@@ -68,10 +68,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     const OUTER_GAP = 18;
     const AH = 26; // FIXED slot height — never scales up, always tight (Apple-style)
     const R1_MH = AH * 2 + OUTER_GAP;
-    // Fit all rounds into ~870px (A4 landscape minus sidebar and margins)
-    const totalBracketWidth = 870;
-    const CW = Math.max(80, Math.floor((totalBracketWidth - rounds * 16) / rounds));
-    const CG = 16;
+    const CW = Math.min(190, Math.max(130, Math.floor(600 / rounds)));
+    const CG = 20;
     const TH = (size / 2) * R1_MH;
 
     // Build HTML for each round column
@@ -176,13 +174,9 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
 body{background:#fff;color:#000;padding:10px}
 @page{size:A4 landscape;margin:6mm}
-@media print{
-  .np{display:none!important}
-  body{padding:0;margin:0}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #page-container{transform-origin:top left}
-}
-@media screen{body{padding:8px}}
+@media print{.np{display:none!important}body{padding:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+#bracket-wrap{transform-origin:top left}
+@media screen{body{max-width:297mm}}
 </style>
 </head>
 <body>
@@ -200,49 +194,31 @@ body{background:#fff;color:#000;padding:10px}
     <div style="opacity:0.7;margin-top:1px">${athletes.length} Athletes · ${size}-Draw</div>
   </div>
 </div>
-<div id="page-container" style="display:flex;gap:10px;align-items:flex-start">
-  <!-- Bracket takes all remaining width -->
-  <div id="bracket-wrap" style="flex:1;overflow:hidden">${bracketHTML}</div>
-
-  <!-- Right sidebar: Referees on top, Places below — all stacked vertically -->
-  <div style="width:100px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;padding-top:16px">
-
-    <!-- Referees -->
-    <div style="border:1px solid #333;border-radius:3px;padding:5px 7px">
-      <div style="font-size:9px;font-weight:900;color:#000;letter-spacing:0.5px;margin-bottom:5px;text-transform:uppercase">Referees</div>
-      <div style="font-size:8px;color:#555;margin-bottom:2px">1.</div>
-      <div style="height:14px;border-bottom:1px solid #ccc;margin-bottom:4px"></div>
-      <div style="font-size:8px;color:#555;margin-bottom:2px">2.</div>
-      <div style="height:14px;border-bottom:1px solid #ccc;margin-bottom:4px"></div>
-      <div style="font-size:8px;color:#555;margin-bottom:2px">3.</div>
-      <div style="height:14px;border-bottom:1px solid #ccc"></div>
+<div style="display:flex;gap:8px;align-items:flex-start">
+  <div style="display:flex;gap:0;flex:1;overflow-x:auto">${bracketHTML}</div>
+  <div style="width:110px;flex-shrink:0;display:flex;flex-direction:column;gap:5px;padding-top:16px">
+    <div style="border:1px solid #ccc;border-radius:3px;padding:4px 6px">
+      <div style="font-size:8px;font-weight:700;color:#333;margin-bottom:3px">Referees:</div>
+      <div style="height:13px;border-bottom:1px solid #eee;margin-bottom:2px"></div>
+      <div style="height:13px;border-bottom:1px solid #eee;margin-bottom:2px"></div>
+      <div style="height:13px"></div>
     </div>
-
-    <!-- Divider -->
-    <div style="border-top:1px solid #ddd;margin:2px 0"></div>
-
-    <!-- 1st Place -->
-    <div style="border:2px solid #000;border-radius:3px;padding:5px 7px">
-      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥇 1st Place</div>
-      <div style="height:16px;border-bottom:1px solid #999;font-size:9px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${winner ? fmt(winner) : ''}</div>
+    <div style="border:1px solid #000;border-radius:3px;padding:4px 6px">
+      <div style="font-size:8px;font-weight:700;color:#000;margin-bottom:1px">🥇 1st Place</div>
+      <div style="font-size:9px;font-weight:900;min-height:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${winner ? fmt(winner) : ''}</div>
     </div>
-
-    <!-- 2nd Place -->
-    <div style="border:1px solid #555;border-radius:3px;padding:5px 7px">
-      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥈 2nd Place</div>
-      <div style="height:16px;border-bottom:1px solid #999"></div>
+    <div style="border:1px solid #555;border-radius:3px;padding:4px 6px">
+      <div style="font-size:8px;font-weight:700;color:#333;margin-bottom:1px">🥈 2nd Place</div>
+      <div style="font-size:9px;min-height:12px">—</div>
     </div>
-
-    <!-- 3rd Place x2 -->
-    <div style="border:1px solid #555;border-radius:3px;padding:5px 7px">
-      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥉 3rd Place</div>
-      <div style="height:16px;border-bottom:1px solid #999"></div>
+    <div style="border:1px solid #555;border-radius:3px;padding:4px 6px">
+      <div style="font-size:8px;font-weight:700;color:#333;margin-bottom:1px">🥉 3rd Place</div>
+      <div style="font-size:9px;min-height:12px">—</div>
     </div>
-    <div style="border:1px solid #555;border-radius:3px;padding:5px 7px">
-      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥉 3rd Place</div>
-      <div style="height:16px;border-bottom:1px solid #999"></div>
+    <div style="border:1px solid #555;border-radius:3px;padding:4px 6px">
+      <div style="font-size:8px;font-weight:700;color:#333;margin-bottom:1px">🥉 3rd Place</div>
+      <div style="font-size:9px;min-height:12px">—</div>
     </div>
-
   </div>
 </div>
 <div style="margin-top:5px;border-top:1px solid #ddd;padding-top:3px;display:flex;justify-content:space-between;font-size:8px;color:#999">
@@ -251,27 +227,16 @@ body{background:#fff;color:#000;padding:10px}
   <span>FKA Competition System · ${new Date().toLocaleDateString('en-GB')}</span>
 </div>
 <script>
-function fitToPage(){
-  var container = document.getElementById('page-container');
-  if(!container) return;
-  // A4 landscape usable area in px (at screen resolution for scaling reference)
-  var pageW = document.documentElement.clientWidth || 1060;
-  var pageH = document.documentElement.clientHeight || 730;
-  var contentW = container.scrollWidth;
-  var contentH = container.scrollHeight;
-  var scaleX = pageW / contentW;
-  var scaleY = pageH / contentH;
-  var scale = Math.min(scaleX, scaleY, 1); // never scale up, only down
-  if(scale < 0.99){
-    container.style.transform = 'scale('+scale+')';
-    container.style.transformOrigin = 'top left';
-    document.body.style.height = (contentH * scale) + 'px';
-    document.body.style.overflow = 'hidden';
-  }
+function scaleBracket(){
+  var wrap=document.getElementById('bracket-wrap');
+  if(!wrap)return;
+  var avail=document.body.clientWidth-130-20; // subtract sidebar + padding
+  var bw=wrap.scrollWidth;
+  if(bw>avail){wrap.style.transform='scale('+(avail/bw)+')';wrap.style.transformOrigin='top left';wrap.parentElement.style.height=(wrap.scrollHeight*(avail/bw))+'px';}
 }
 window.addEventListener('load',function(){
-  fitToPage();
-  setTimeout(function(){fitToPage(); window.print();}, 800);
+  scaleBracket();
+  setTimeout(function(){window.print();},1000);
 });
 </script>
 </body>
