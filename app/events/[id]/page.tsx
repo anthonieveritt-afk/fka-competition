@@ -40,6 +40,7 @@ export default async function EventPublicPage({ params }: { params: Promise<{ id
 
   const kumiteCategories = categoryList.filter(c => c.discipline === 'kumite');
   const kataCategories = categoryList.filter(c => c.discipline === 'kata');
+  const slamManCategories = categoryList.filter(c => c.discipline === 'slam_man');
 
   return (
     <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto">
@@ -90,6 +91,26 @@ export default async function EventPublicPage({ params }: { params: Promise<{ id
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="badge badge-blue">kata</span>
+                      <span className="text-xs" style={{ color: '#0066cc' }}>Brackets →</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {slamManCategories.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: '#555' }}>Slam-Man</h2>
+              <div className="space-y-2">
+                {slamManCategories.map(c => (
+                  <Link key={c.id} href={`/events/${eventId}/brackets/${c.id}`} className="flex items-center justify-between card hover:border-white/20 transition-colors no-underline">
+                    <div>
+                      <div className="font-medium text-white">{c.name}</div>
+                      <div className="text-xs mt-0.5" style={{ color: '#666' }}>{c.ageGroup} · {c.beltRange}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="badge" style={{ background: '#f59e0b22', color: '#f59e0b', border: '1px solid #f59e0b44' }}>slam-man</span>
                       <span className="text-xs" style={{ color: '#0066cc' }}>Brackets →</span>
                     </div>
                   </Link>
