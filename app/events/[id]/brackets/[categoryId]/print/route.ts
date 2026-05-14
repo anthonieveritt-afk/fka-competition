@@ -194,31 +194,49 @@ body{background:#fff;color:#000;padding:10px}
     <div style="opacity:0.7;margin-top:1px">${athletes.length} Athletes · ${size}-Draw</div>
   </div>
 </div>
-<div style="display:flex;gap:8px;align-items:flex-start">
-  <div style="display:flex;gap:0;flex:1;overflow-x:auto">${bracketHTML}</div>
-  <div style="width:110px;flex-shrink:0;display:flex;flex-direction:column;gap:5px;padding-top:16px">
-    <div style="border:1px solid #000;padding:4px 6px"><div style="font-size:8px;font-weight:700">1st Place</div><div style="font-size:9px;font-weight:900;min-height:12px">${winner ? fmt(winner) : '&#8212;'}</div></div>
-      <div style="font-size:9px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:12px">${winner ? fmt(winner) : '—'}</div>
+<div style="display:flex;gap:10px;align-items:flex-start">
+  <!-- Bracket takes all remaining width -->
+  <div id="bracket-wrap" style="flex:1;overflow:hidden">${bracketHTML}</div>
+
+  <!-- Right sidebar: Referees on top, Places below — all stacked vertically -->
+  <div style="width:100px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;padding-top:16px">
+
+    <!-- Referees -->
+    <div style="border:1px solid #333;border-radius:3px;padding:5px 7px">
+      <div style="font-size:9px;font-weight:900;color:#000;letter-spacing:0.5px;margin-bottom:5px;text-transform:uppercase">Referees</div>
+      <div style="font-size:8px;color:#555;margin-bottom:2px">1.</div>
+      <div style="height:14px;border-bottom:1px solid #ccc;margin-bottom:4px"></div>
+      <div style="font-size:8px;color:#555;margin-bottom:2px">2.</div>
+      <div style="height:14px;border-bottom:1px solid #ccc;margin-bottom:4px"></div>
+      <div style="font-size:8px;color:#555;margin-bottom:2px">3.</div>
+      <div style="height:14px;border-bottom:1px solid #ccc"></div>
     </div>
-    <div style="border:1.5px solid #BDBDBD;background:#FAFAFA;border-radius:3px;padding:4px 6px">
-      <div style="font-size:8px;font-weight:700;color:#777;margin-bottom:1px">🥈 2nd Place</div>
-      <div style="font-size:9px;font-weight:700;min-height:12px">—</div>
+
+    <!-- Divider -->
+    <div style="border-top:1px solid #ddd;margin:2px 0"></div>
+
+    <!-- 1st Place -->
+    <div style="border:2px solid #000;border-radius:3px;padding:5px 7px">
+      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥇 1st Place</div>
+      <div style="height:16px;border-bottom:1px solid #999;font-size:9px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${winner ? fmt(winner) : ''}</div>
     </div>
-    <div style="border:1.5px solid #FF8F00;background:#FFF3E0;border-radius:3px;padding:4px 6px">
-      <div style="font-size:8px;font-weight:700;color:#777;margin-bottom:1px">🥉 3rd Place</div>
-      <div style="font-size:9px;font-weight:700;min-height:12px">—</div>
+
+    <!-- 2nd Place -->
+    <div style="border:1px solid #555;border-radius:3px;padding:5px 7px">
+      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥈 2nd Place</div>
+      <div style="height:16px;border-bottom:1px solid #999"></div>
     </div>
-    <div style="border:1.5px solid #FF8F00;background:#FFF3E0;border-radius:3px;padding:4px 6px">
-      <div style="font-size:8px;font-weight:700;color:#777;margin-bottom:1px">🥉 3rd Place</div>
-      <div style="font-size:9px;font-weight:700;min-height:12px">—</div>
+
+    <!-- 3rd Place x2 -->
+    <div style="border:1px solid #555;border-radius:3px;padding:5px 7px">
+      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥉 3rd Place</div>
+      <div style="height:16px;border-bottom:1px solid #999"></div>
     </div>
-    <div style="font-size:8px;color:#888;font-style:italic;text-align:center;margin-top:2px">*Seeded</div>
-    <div style="border:1px solid #ccc;border-radius:3px;padding:4px 6px;margin-top:6px">
-      <div style="font-size:8px;font-weight:700;color:#666;margin-bottom:3px">Referees:</div>
-      <div style="height:13px;border-bottom:1px solid #eee;margin-bottom:2px"></div>
-      <div style="height:13px;border-bottom:1px solid #eee;margin-bottom:2px"></div>
-      <div style="height:13px"></div>
+    <div style="border:1px solid #555;border-radius:3px;padding:5px 7px">
+      <div style="font-size:9px;font-weight:900;color:#000;margin-bottom:3px">🥉 3rd Place</div>
+      <div style="height:16px;border-bottom:1px solid #999"></div>
     </div>
+
   </div>
 </div>
 <div style="margin-top:5px;border-top:1px solid #ddd;padding-top:3px;display:flex;justify-content:space-between;font-size:8px;color:#999">
@@ -230,7 +248,7 @@ body{background:#fff;color:#000;padding:10px}
 function scaleBracket(){
   var wrap=document.getElementById('bracket-wrap');
   if(!wrap)return;
-  var avail=document.body.clientWidth-130-20; // subtract sidebar + padding
+  var avail=document.body.clientWidth-120-20; // subtract sidebar + padding
   var bw=wrap.scrollWidth;
   if(bw>avail){wrap.style.transform='scale('+(avail/bw)+')';wrap.style.transformOrigin='top left';wrap.parentElement.style.height=(wrap.scrollHeight*(avail/bw))+'px';}
 }
