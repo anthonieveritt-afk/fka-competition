@@ -182,13 +182,19 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
               </div>
             </div>`;
 
-          // Connector lines into the gap column
+          // Connector lines into the gap column.
+          // Gap div y=0 aligns with the column top (which includes the 16px round-label header).
+          // vTop/vBot/midY are content-relative (below the header), so add HDR to convert.
           if (!isLast) {
+            const HDR = 16; // round-label header height
             const barX = Math.floor(CG * 0.45);
-            gapHTML += `<div style="position:absolute;top:${vTop - 1}px;left:0;width:${barX + 2}px;height:2px;background:#000"></div>`;
-            gapHTML += `<div style="position:absolute;top:${vBot - 1}px;left:0;width:${barX + 2}px;height:2px;background:#000"></div>`;
-            gapHTML += `<div style="position:absolute;top:${vTop - 1}px;left:${barX}px;width:2px;height:${vBot - vTop + 2}px;background:#000"></div>`;
-            gapHTML += `<div style="position:absolute;top:${midY - 1}px;left:${barX}px;right:-1px;height:2px;background:#000"></div>`;
+            const gY1 = vTop + HDR - 1;  // H line from red-slot centre
+            const gY2 = vBot + HDR - 1;  // H line from blue-slot centre
+            const gYm = midY + HDR - 1;  // H line to next round (midpoint of V bar)
+            gapHTML += `<div style="position:absolute;top:${gY1}px;left:0;width:${barX + 2}px;height:2px;background:#000"></div>`;
+            gapHTML += `<div style="position:absolute;top:${gY2}px;left:0;width:${barX + 2}px;height:2px;background:#000"></div>`;
+            gapHTML += `<div style="position:absolute;top:${gY1}px;left:${barX}px;width:2px;height:${gY2 - gY1 + 2}px;background:#000"></div>`;
+            gapHTML += `<div style="position:absolute;top:${gYm}px;left:${barX}px;right:-1px;height:2px;background:#000"></div>`;
           }
         }
 
