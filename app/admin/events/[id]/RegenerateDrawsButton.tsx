@@ -60,7 +60,9 @@ export default function RegenerateDrawsButton({ eventId }: Props) {
                   ? <span style={{ color: '#555' }}>skipped — {c.reason}</span>
                   : <>
                       <span>{c.athletes} athletes · {c.size}-draw</span>
-                      {c.conflictsResolved && <span style={{ color: '#f59e0b' }}>⚡ conflict resolved in {c.attempts} attempts</span>}
+                      {c.crossClubPairs > 0 && <span style={{ color: '#22c55e' }}>⚔ {c.crossClubPairs} JHKA↔Forza</span>}
+                      {c.sameClubPairs  > 0 && <span style={{ color: '#f59e0b' }}>⚠ {c.sameClubPairs} same-club</span>}
+                      {c.conflictsResolved   && <span style={{ color: '#60a5fa' }}>⚡ re-shuffled</span>}
                     </>
                 }
               </div>

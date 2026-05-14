@@ -5,6 +5,9 @@ export const dynamic = 'force-dynamic';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Athlete { id: number; first_name: string; surname: string; club: string; }
+
+const FORZA = 'Forza Karate Club';
+const JHKA  = 'JHKA';
 interface Slot { athleteId: number | null; name: string; club: string; }
 interface BracketMatch {
   id: string; round: number; matchIndex: number;
@@ -22,6 +25,39 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// Interleave JHKA and Forza so they're likely to face each other in R1
+function arrangeCrossClub(athletes: Athlete[]): Athlete[] {
+  const jhka   = shuffle(athletes.filter(a => a.club === JHKA));
+  const forza  = shuffle(athletes.filter(a => a.club === FORZA));
+  const others = shuffle(athletes.filter(a => a.club !== JHKA && a.club !== FORZA));
+  const interleaved: Athlete[] = [];
+  const max = Math.max(jhka.length, forza.length);
+  for (let i = 0; i < max; i++) {
+    if (i < jhka.length)  interleaved.push(jhka[i]);
+    if (i < forza.length) interleaved.push(forza[i]);
+  }
+  return [...interleaved, ...others];
+}
+
+// Count how many non-bye R1 matches pit athletes from different clubs
+function countCrossClubPairs(state: BracketState, clubMap: Record<number, string>): number {
+  return state.matches
+    .filter(m => m.round === 0 && !m.bye && m.top.athleteId && m.bottom.athleteId)
+    .filter(m => (clubMap[m.top.athleteId!] ?? '') !== (clubMap[m.bottom.athleteId!] ?? ''))
+    .length;
+}
+
+function countSameClubPairs(state: BracketState, clubMap: Record<number, string>): number {
+  return state.matches
+    .filter(m => m.round === 0 && !m.bye && m.top.athleteId && m.bottom.athleteId)
+    .filter(m => {
+      const tc = clubMap[m.top.athleteId!] ?? '?';
+      const bc = clubMap[m.bottom.athleteId!] ?? '?';
+      return tc === bc && (tc === JHKA || tc === FORZA);
+    })
+    .length;
 }
 
 function buildBracket(athletes: Athlete[]): BracketState {
@@ -149,20 +185,53 @@ export async function POST(
         continue;
       }
 
+      // Build club lookup for this category's athletes
+      const clubMap: Record<number, string> = {};
+      athletes.forEach(a => { clubMap[a.id] = a.club; });
+
       let state: BracketState;
       let pairs: Set<string>;
       let attempts = 0;
       let conflictsResolved = false;
+      let bestState: BracketState | null = null;
+      let bestCrossClub = -1;
 
-      // Attempt up to MAX_ATTEMPTS shuffles to avoid cross-category R1 conflicts
+      // Try up to MAX_ATTEMPTS arrangements:
+      // - First attempt: structured JHKA/Forza interleave
+      // - Subsequent: random shuffles
+      // Pick the arrangement with most cross-club R1 pairs that has no cross-category conflicts
       do {
-        const shuffled = shuffle(athletes);
-        state = buildBracket(shuffled);
-        pairs = getR1Pairs(state);
+        const ordered = attempts === 0 ? arrangeCrossClub(athletes) : shuffle(athletes);
+        const candidate = buildBracket(ordered);
+        const candidatePairs = getR1Pairs(candidate);
         attempts++;
-        if (!hasConflict(pairs, allPriorPairs)) break;
-        conflictsResolved = true;
+
+        if (!hasConflict(candidatePairs, allPriorPairs)) {
+          const crossClub = countCrossClubPairs(candidate, clubMap);
+          if (crossClub > bestCrossClub) {
+            bestCrossClub = crossClub;
+            bestState = candidate;
+            pairs = candidatePairs;
+            state = candidate;
+            conflictsResolved = attempts > 1;
+          }
+          // Keep trying for a better cross-club arrangement
+          if (bestCrossClub > 0 && attempts >= 5) break; // good enough early exit
+        }
       } while (attempts < MAX_ATTEMPTS);
+
+      // Fallback: if all attempts had cross-category conflicts, use the best cross-club one anyway
+      if (!bestState) {
+        const ordered = arrangeCrossClub(athletes);
+        bestState = buildBracket(ordered);
+        pairs = getR1Pairs(bestState);
+        state = bestState;
+      }
+
+      state = bestState!;
+      pairs = getR1Pairs(state);
+
+      const sameClub = countSameClubPairs(state, clubMap);
 
       // Save bracket state (upsert)
       await client.query(`
@@ -180,6 +249,8 @@ export async function POST(
         size: state!.size,
         attempts,
         conflictsResolved,
+        crossClubPairs: bestCrossClub,
+        sameClubPairs: sameClub,
         skipped: false,
       });
     }
