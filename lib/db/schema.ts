@@ -40,6 +40,22 @@ export const categories = pgTable('comp_categories', {
   ageGroup: text('age_group').notNull(),
   weightClass: text('weight_class'),
   beltRange: text('belt_range'),
+  format: text('format').default('bracket'), // 'bracket' | 'wuko'
+});
+
+// WUKO Kata Scores
+export const wukoScores = pgTable('comp_wuko_scores', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').references(() => categories.id).notNull(),
+  eventId: integer('event_id').references(() => events.id).notNull(),
+  athleteId: integer('athlete_id').references(() => athletes.id).notNull(),
+  round: text('round').notNull(), // 'prelim' | 'final'
+  j1: real('j1'),
+  j2: real('j2'),
+  j3: real('j3'),
+  j4: real('j4'),
+  total: real('total'), // sum of middle 2 after dropping high/low
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // Athletes

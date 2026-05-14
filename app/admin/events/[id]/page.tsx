@@ -1,7 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Pool } from 'pg';
+import { useState } from 'react';
 import PrintAllBracketsButton from './PrintAllBracketsButton';
+import WukoToggleButton from './WukoToggleButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,18 +34,29 @@ async function getData(eventId: number) {
   }
 }
 
-export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+// Split into server loader + client shell so we can use hooks
+async function EventDetailPageServer({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const eventId = parseInt(id);
   const data = await getData(eventId);
   if (!data) return notFound();
-  const { event, categories, totalRegs } = data;
+  return <EventDetailClient eventId={eventId} initialData={data} />;
+}
+export default EventDetailPageServer;
+
+function EventDetailClient({ eventId, initialData }: { eventId: number; initialData: any }) {
+  const { event, totalRegs } = initialData;
+  const [categories, setCategories] = useState<any[]>(initialData.categories);
 
   const disciplineColor: Record<string, string> = {
     kumite: '#ef4444', kata: '#0066cc', slam_man: '#f59e0b',
   };
   const disciplineLabel: Record<string, string> = {
     kumite: 'Kumite', kata: 'Kata', slam_man: 'Slam-Man',
+  };
+
+  const handleFormatToggle = (id: number, newFormat: string) => {
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, format: newFormat } : c));
   };
 
   return (
@@ -103,7 +118,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Category', 'Discipline', 'Age Group', 'Athletes', 'Bracket', 'Print'].map(h => (
+                {['Category', 'Discipline', 'Age Group', 'Athletes', 'Format', 'Action', 'Print'].map(h => (
                   <th key={h} style={{ padding: '10px 16px', textAlign: 'left', color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>{h}</th>
                 ))}
               </tr>
@@ -129,17 +144,42 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                       fontWeight: 700, fontSize: 15,
                     }}>{c.reg_count}</span>
                   </td>
+                  {/* Format toggle (kata only) */}
+                  <td style={{ padding: '8px 16px' }}>
+                    <WukoToggleButton
+                      eventId={eventId}
+                      categoryId={c.id}
+                      currentFormat={c.format ?? 'bracket'}
+                      discipline={c.discipline}
+                      onToggled={handleFormatToggle}
+                    />
+                  </td>
+                  {/* Action: Draw or WUKO Score */}
                   <td style={{ padding: '12px 16px' }}>
-                    <Link href={`/events/${eventId}/brackets/${c.id}/draw`} style={{
-                      color: '#0066cc', fontSize: 13, fontWeight: 600, textDecoration: 'none',
-                    }}>Draw →</Link>
+                    {c.format === 'wuko' ? (
+                      <Link href={`/events/${eventId}/wuko/${c.id}`} style={{
+                        color: '#a78bfa', fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                      }}>Score →</Link>
+                    ) : (
+                      <Link href={`/events/${eventId}/brackets/${c.id}/draw`} style={{
+                        color: '#0066cc', fontSize: 13, fontWeight: 600, textDecoration: 'none',
+                      }}>Draw →</Link>
+                    )}
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <Link href={`/events/${eventId}/brackets/${c.id}/print`} target="_blank" style={{
-                      background: '#1a1a1a', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
-                      textDecoration: 'none',
-                    }}>🖨 Print</Link>
+                    {c.format === 'wuko' ? (
+                      <Link href={`/events/${eventId}/wuko/${c.id}/print`} target="_blank" style={{
+                        background: '#7c3aed22', color: '#a78bfa', border: '1px solid #7c3aed44',
+                        borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                        textDecoration: 'none',
+                      }}>🖨 Print</Link>
+                    ) : (
+                      <Link href={`/events/${eventId}/brackets/${c.id}/print`} target="_blank" style={{
+                        background: '#1a1a1a', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                        textDecoration: 'none',
+                      }}>🖨 Print</Link>
+                    )}
                   </td>
                 </tr>
               ))}
