@@ -147,12 +147,23 @@ export default function WukoScoring({ event, category, eventId, categoryId }: Pr
 
   const ScoreInput = ({ round, athleteId, field, value }: { round: 'prelim'|'final'; athleteId: number; field: 'j1'|'j2'|'j3'|'j4'; value: string }) => (
     <input
-      type="number" min={5} max={9.9} step={0.1}
+      type="text"
+      inputMode="decimal"
       value={value}
-      onChange={e => updateScore(round, athleteId, field, e.target.value)}
+      onChange={e => {
+        const raw = e.target.value;
+        // Allow partial input while typing (e.g. "6", "6.", "6.0")
+        if (raw === '' || /^[5-9](\.[0-9]?)?$/.test(raw)) {
+          updateScore(round, athleteId, field, raw);
+        }
+      }}
       onBlur={e => {
         const v = parseFloat(e.target.value);
-        if (!isNaN(v)) updateScore(round, athleteId, field, v.toFixed(1));
+        if (!isNaN(v) && v >= 5 && v <= 9.9) {
+          updateScore(round, athleteId, field, v.toFixed(1));
+        } else if (e.target.value === '') {
+          updateScore(round, athleteId, field, '');
+        }
       }}
       style={SCORE_INPUT_STYLE}
       placeholder="—"
