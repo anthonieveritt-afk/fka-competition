@@ -66,7 +66,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     // Scale slot height to fill the printable area (A4 landscape ≈ 680px usable after header/footer)
     // Match the draw page: slots touch within match, gap between matches
     const OUTER_GAP = 18;
-    const AH = Math.max(20, Math.floor(((600) / (size / 2)) * 0.55));
+    const AH = 26; // FIXED slot height — never scales up, always tight (Apple-style)
     const R1_MH = AH * 2 + OUTER_GAP;
     const CW = Math.min(190, Math.max(130, Math.floor(600 / rounds)));
     const CG = 20;
