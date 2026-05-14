@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import PrintAllBracketsButton from './PrintAllBracketsButton';
 import WukoToggleButton from './WukoToggleButton';
+import RegenerateDrawsButton from './RegenerateDrawsButton';
 
 const disciplineColor: Record<string, string> = {
   kumite: '#ef4444', kata: '#0066cc', slam_man: '#f59e0b',
@@ -64,6 +65,7 @@ export default function EventAdminClient({ eventId, event, initialCategories, to
           padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none',
         }}>Manage Categories</Link>
         <PrintAllBracketsButton eventId={eventId} categories={categories.map((c: any) => ({ id: c.id, name: c.name }))} />
+        <RegenerateDrawsButton eventId={eventId} />
         <Link href={`/admin/events/${eventId}/timetable`} style={{
           background: '#1a1a1a', color: '#f5f5f5', border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none',
