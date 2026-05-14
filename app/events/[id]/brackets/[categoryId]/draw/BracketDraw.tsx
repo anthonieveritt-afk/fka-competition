@@ -40,14 +40,20 @@ function buildBracket(athletes: (Athlete | null)[], size: number): BracketState 
         winnerId: null, bye: false });
     }
   }
-  // Propagate byes
+  // Propagate byes — only cascade winnerId if BOTH feeder R0 matches are byes.
+  // If the partner R0 match is a real contest, leave R1 winnerId null until played.
   for (const m of matches.filter(m => m.round === 0 && m.bye && m.winnerId)) {
     const next = matches.find(x => x.id === `R1-M${Math.floor(m.matchIndex / 2)}`);
     if (next) {
       if (m.matchIndex % 2 === 0) next.top = { athleteId: m.winnerId!, name: '', club: '' };
       else next.bottom = { athleteId: m.winnerId!, name: '', club: '' };
-      if (next.top.athleteId && !next.bottom.athleteId) { next.winnerId = next.top.athleteId; next.bye = true; }
-      if (!next.top.athleteId && next.bottom.athleteId) { next.winnerId = next.bottom.athleteId; next.bye = true; }
+      const partnerIdx = m.matchIndex % 2 === 0 ? m.matchIndex + 1 : m.matchIndex - 1;
+      const partner = matches.find(x => x.round === 0 && x.matchIndex === partnerIdx);
+      const partnerAlsoBye = !partner || (partner.bye && !!partner.winnerId);
+      if (partnerAlsoBye) {
+        if (next.top.athleteId && !next.bottom.athleteId) { next.winnerId = next.top.athleteId; next.bye = true; }
+        if (!next.top.athleteId && next.bottom.athleteId) { next.winnerId = next.bottom.athleteId; next.bye = true; }
+      }
     }
   }
   return { size, rounds, matches };
