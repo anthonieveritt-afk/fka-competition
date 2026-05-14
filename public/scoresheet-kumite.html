@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>JHKA Individual Kumite Scoresheet</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+  body{background:#fff;color:#000;padding:6mm}
+  @page{size:A4 landscape;margin:5mm}
+  @media print{
+    body{padding:0}
+    .no-print{display:none!important}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+
+  /* ── Page header ─────────────────────────────────── */
+  .page-header{
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:2px solid #1a1a1a;padding-bottom:4px;margin-bottom:4px;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-logo{
+    width:38px;height:38px;background:#1a1a1a;border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:10px;font-weight:900;letter-spacing:-0.5px;text-align:center;
+    line-height:1.1;flex-shrink:0
+  }
+  .brand-name{font-size:18px;font-weight:900;letter-spacing:0.5px;color:#1a1a1a}
+  .brand-web{font-size:9px;color:#555;letter-spacing:0.3px;margin-top:1px}
+  .sheet-title{text-align:center}
+  .sheet-title h1{font-size:14px;font-weight:900;letter-spacing:0.5px;color:#1a1a1a}
+  .sheet-title p{font-size:8px;color:#555;margin-top:1px}
+  .area-block{text-align:right;font-size:9px;color:#333}
+  .area-line{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:2px}
+  .area-field{display:inline-flex;align-items:center;gap:4px}
+  .area-field span{font-weight:700;font-size:8px}
+  .area-input{display:inline-block;width:70px;border-bottom:1px solid #333;height:14px}
+
+  /* ── Match table ──────────────────────────────────── */
+  .match-table{width:100%;border-collapse:collapse;margin-top:3px}
+
+  /* Column header row */
+  .col-head{height:14px}
+  .col-head td{font-size:6.5px;font-weight:700;text-align:center;padding:0;letter-spacing:0.2px;color:#444;border:none}
+  .col-head .aka-hdr{color:#9b1a1a}
+  .col-head .ao-hdr{color:#0a2b8c}
+
+  /* Match rows */
+  .match-row td{padding:0;vertical-align:middle}
+  .match-row{height:46px}
+  .match-row:not(:last-child) td{border-bottom:1px solid #ccc}
+
+  /* Side label (AKA / AO) */
+  .side-label{
+    width:22px;font-size:6px;font-weight:900;text-align:center;
+    writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:1px;
+    padding:2px 0;
+  }
+  .aka-label{color:#fff;background:#C8161A;transform:rotate(180deg)}
+  .ao-label{color:#fff;background:#1A2EC8}
+
+  /* Name write-in */
+  .name-cell{
+    width:118px;padding:0 4px;border-right:1px solid #ccc;border-left:1px solid #ccc;
+    font-size:7.5px;color:#555;
+  }
+  .name-cell .name-label{font-size:6px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.3px}
+  .name-cell .name-line{border-bottom:1px solid #aaa;height:14px;margin-top:1px}
+
+  /* Score track (numbers 1–12) */
+  .score-track{width:196px;padding:0 2px}
+  .num-row{display:flex;gap:1px;justify-content:center;padding:2px 0}
+  .num-box{
+    width:14px;height:14px;border:1px solid #999;border-radius:2px;
+    font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    color:#333;flex-shrink:0
+  }
+
+  /* Warning boxes */
+  .warn-track{width:80px;padding:0 2px;border-left:1px solid #ddd}
+  .warn-row{display:flex;gap:2px;justify-content:center;padding:2px 0}
+  .warn-box{
+    width:16px;height:14px;border:1px solid #888;border-radius:2px;
+    font-size:6.5px;font-weight:900;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;color:#333
+  }
+  .warn-box.w-box{border-color:#e67e00;color:#e67e00}
+  .warn-box.k-box{border-color:#cc6600;color:#cc6600}
+  .warn-box.hc-box{border-color:#cc0000;color:#cc0000;font-size:5.5px}
+  .warn-box.h-box{border-color:#880000;color:#880000}
+
+  /* Cat boxes */
+  .cat-track{width:40px;padding:0 2px;border-left:1px solid #ddd}
+  .cat-row{display:flex;gap:2px;justify-content:center;padding:2px 0}
+  .cat-box{
+    width:16px;height:14px;border:1px solid #888;border-radius:2px;
+    font-size:5.5px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;color:#555
+  }
+
+  /* Score total */
+  .score-total{
+    width:38px;border-left:1px solid #ddd;border-right:1px solid #ccc;
+    text-align:center;padding:0 2px
+  }
+  .score-total .st-label{font-size:5.5px;font-weight:700;color:#888;text-transform:uppercase}
+  .score-total .st-box{height:16px;border:1px solid #aaa;border-radius:2px;margin-top:1px}
+
+  /* Result */
+  .result-cell{
+    width:30px;background:#f5f5f5;border-left:1px solid #ccc;border-right:1px solid #ccc;
+    text-align:center;padding:1px 0
+  }
+  .result-cell .r-label{font-size:5.5px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.3px}
+  .result-cell .r-box{height:20px;border:1px solid #aaa;border-radius:2px;margin:1px 3px 0}
+
+  /* Centre divider */
+  .centre-div{width:3px;background:#1a1a1a}
+
+  /* ── Legend ───────────────────────────────────────── */
+  .legend{
+    display:flex;gap:0;border:1px solid #ccc;border-radius:3px;
+    margin-top:4px;overflow:hidden;
+  }
+  .legend-block{
+    flex:1;padding:3px 6px;border-right:1px solid #ccc;font-size:6.5px;color:#333;
+  }
+  .legend-block:last-child{border-right:none}
+  .legend-block strong{display:block;font-size:6px;font-weight:900;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px}
+  .legend-block span{display:block;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:10px;display:flex;gap:8px">
+  <button onclick="window.print()" style="background:#1a1a8c;color:#fff;border:none;padding:8px 20px;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer">🖨 Print / Save PDF</button>
+</div>
+
+<!-- Page header -->
+<div class="page-header">
+  <div class="brand">
+    <div class="brand-logo">JHKA</div>
+    <div>
+      <div class="brand-name">JHKA</div>
+      <div class="brand-web">www.jhka.co.uk</div>
+    </div>
+  </div>
+  <div class="sheet-title">
+    <h1>Individual Kumite Scoresheet</h1>
+    <p>Circle points scored · Strike through warnings</p>
+  </div>
+  <div class="area-block">
+    <div class="area-line">
+      <div class="area-field"><span>AREA:</span><span class="area-input"></span></div>
+      <div class="area-field"><span>TATAMI:</span><span class="area-input"></span></div>
+    </div>
+    <div class="area-line" style="margin-top:4px">
+      <div class="area-field"><span>EVENT:</span><span class="area-input" style="width:110px"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Match table -->
+<table class="match-table">
+  <!-- Column headers -->
+  <thead>
+    <tr class="col-head">
+      <td colspan="2" class="aka-hdr" style="text-align:left;padding-left:4px">AKA — RED COMPETITOR</td>
+      <td></td><td></td><td></td><td></td><td></td>
+      <td class="centre-div" style="width:3px"></td>
+      <td></td><td></td><td></td><td></td><td></td>
+      <td colspan="2" class="ao-hdr" style="text-align:right;padding-right:4px">AO — BLUE COMPETITOR</td>
+    </tr>
+  </thead>
+  <tbody id="match-rows">
+  </tbody>
+</table>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-block">
+    <strong>Scoring</strong>
+    <span>Yuko — 1 point</span>
+    <span>Waza-ari — 2 points</span>
+    <span>Ippon — 3 points</span>
+  </div>
+  <div class="legend-block">
+    <strong>Warnings</strong>
+    <span><b>W</b> Chukoku — 1st warning</span>
+    <span><b>K</b> Keikoku — 2nd warning</span>
+    <span><b>HC</b> Hansoku Chui — 3rd warning</span>
+    <span><b>H</b> Hansoku — Disqualification</span>
+  </div>
+  <div class="legend-block">
+    <strong>Fouls</strong>
+    <span><b>CAT 1</b> Crossed wrists</span>
+    <span><b>CAT 2</b> Pointed finger</span>
+  </div>
+  <div class="legend-block">
+    <strong>Decisions</strong>
+    <span>Win · Lose · Draw</span>
+    <span><b>KK</b> Kiken</span>
+    <span><b>S</b> Shikkaku</span>
+  </div>
+</div>
+
+<script>
+// Build 11 match rows dynamically
+const tbody = document.getElementById('match-rows');
+const ROWS = 11;
+
+function numBoxes() {
+  let h = '';
+  for (let i = 1; i <= 12; i++) {
+    h += `<div class="num-box">${i}</div>`;
+  }
+  return h;
+}
+
+function warnBoxes() {
+  return `
+    <div class="warn-box w-box">W</div>
+    <div class="warn-box k-box">K</div>
+    <div class="warn-box hc-box">HC</div>
+    <div class="warn-box h-box">H</div>
+  `;
+}
+
+function catBoxes() {
+  return `
+    <div class="cat-box">C1</div>
+    <div class="cat-box">C2</div>
+  `;
+}
+
+for (let i = 1; i <= ROWS; i++) {
+  const row = document.createElement('tr');
+  row.className = 'match-row';
+  row.innerHTML = `
+    <!-- AKA side label -->
+    <td class="side-label aka-label">AKA</td>
+
+    <!-- AKA name -->
+    <td class="name-cell">
+      <div class="name-label">Name</div>
+      <div class="name-line"></div>
+    </td>
+
+    <!-- AKA score track -->
+    <td class="score-track">
+      <div class="num-row">${numBoxes()}</div>
+    </td>
+
+    <!-- AKA warnings -->
+    <td class="warn-track">
+      <div class="warn-row">${warnBoxes()}</div>
+    </td>
+
+    <!-- AKA cat fouls -->
+    <td class="cat-track">
+      <div class="cat-row">${catBoxes()}</div>
+    </td>
+
+    <!-- AKA score total -->
+    <td class="score-total">
+      <div class="st-label">Score</div>
+      <div class="st-box"></div>
+    </td>
+
+    <!-- AKA result -->
+    <td class="result-cell">
+      <div class="r-label">Result</div>
+      <div class="r-box"></div>
+    </td>
+
+    <!-- Centre divider -->
+    <td class="centre-div"></td>
+
+    <!-- AO result -->
+    <td class="result-cell">
+      <div class="r-label">Result</div>
+      <div class="r-box"></div>
+    </td>
+
+    <!-- AO score total -->
+    <td class="score-total" style="border-left:1px solid #ccc;border-right:1px solid #ddd">
+      <div class="st-label">Score</div>
+      <div class="st-box"></div>
+    </td>
+
+    <!-- AO cat fouls -->
+    <td class="cat-track" style="border-left:none;border-right:1px solid #ddd">
+      <div class="cat-row">${catBoxes()}</div>
+    </td>
+
+    <!-- AO warnings -->
+    <td class="warn-track" style="border-left:none;border-right:1px solid #ddd">
+      <div class="warn-row">${warnBoxes()}</div>
+    </td>
+
+    <!-- AO score track -->
+    <td class="score-track">
+      <div class="num-row">${numBoxes()}</div>
+    </td>
+
+    <!-- AO name -->
+    <td class="name-cell" style="text-align:right">
+      <div class="name-label">Name</div>
+      <div class="name-line"></div>
+    </td>
+
+    <!-- AO side label -->
+    <td class="side-label ao-label">AO</td>
+  `;
+  tbody.appendChild(row);
+}
+</script>
+</body>
+</html>
