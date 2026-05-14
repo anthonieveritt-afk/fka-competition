@@ -307,26 +307,34 @@ export default function BracketDraw({ event, category, initialAthletes, eventId,
                                 
                               </div>
                             </div>
-                            {/* Connector lines: tails meet at vertical bar, midpoint exits right */}
-                            {!isLast && (() => {
-                              const barOffset = Math.floor(COL_GAP * 0.45); // bar at 45% into gap
-                              return <>
-                                {/* Horizontal tail from red slot to vertical bar */}
-                                <div style={{ position: 'absolute', right: -(barOffset + 2), top: vTop - mt - 1, height: 2, width: barOffset + 2, background: '#000' }} />
-                                {/* Horizontal tail from blue slot to vertical bar */}
-                                <div style={{ position: 'absolute', right: -(barOffset + 2), top: vBot - mt - 1, height: 2, width: barOffset + 2, background: '#000' }} />
-                                {/* Vertical bar connecting the two tails */}
-                                <div style={{ position: 'absolute', right: -(barOffset + 2), top: vTop - mt - 1, height: vBot - vTop + 2, width: 2, background: '#000' }} />
-                                {/* Midpoint horizontal from vertical bar to next column */}
-                                <div style={{ position: 'absolute', right: -(COL_GAP + COL_W), top: midY - mt - 1, height: 2, width: COL_GAP - barOffset, background: '#000' }} />
-                              </>;
-                            })()}
+
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                  {!isLast && <div style={{ width: COL_GAP, flexShrink: 0 }} />}
+                  {!isLast && (
+                    <div style={{ width: COL_GAP, flexShrink: 0, position: 'relative', height: totalH }}>
+                      {rMatches.map(m => {
+                        const mTop2 = m.matchIndex * matchH;
+                        const slotPad2 = (matchH - SH * 2) / 2;
+                        const topY2 = mTop2 + slotPad2;
+                        const botY2 = topY2 + SH;
+                        const vTop2 = topY2 + SH / 2;
+                        const vBot2 = botY2 + SH / 2;
+                        const midY2 = topY2 + SH;
+                        const barW = Math.floor(COL_GAP * 0.5);
+                        return (
+                          <div key={m.id}>
+                            {/* C-bracket: top border (from red) + right border (vertical) + bottom border (from blue) */}
+                            <div style={{ position: 'absolute', top: vTop2, left: 0, width: barW, height: vBot2 - vTop2, borderTop: '2px solid #000', borderRight: '2px solid #000', borderBottom: '2px solid #000', boxSizing: 'border-box' }} />
+                            {/* Midpoint horizontal to next column */}
+                            <div style={{ position: 'absolute', top: midY2 - 1, left: barW, right: 0, height: 2, background: '#000' }} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
