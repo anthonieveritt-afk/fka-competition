@@ -64,7 +64,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
         return { ...a, j1, j2, j3, j4, total: total ? parseFloat(total) : 0, totalFmt: total };
       }).sort((a, b) => b.total - a.total);
 
-    const boxStyle = 'width:44px;height:22px;border:1px solid #ccc;border-radius:2px;display:inline-block;text-align:center;font-size:11px;font-weight:700;line-height:22px;color:#000';
+    const boxStyle = 'width:44px;height:22px;border:2px solid #000;border-radius:2px;display:inline-block;text-align:center;font-size:11px;font-weight:700;line-height:22px;color:#000';
     const emptyBox = (val: any) => val != null ? `<span style="${boxStyle}">${Number(val).toFixed(1)}</span>` : `<span style="${boxStyle}"></span>`;
 
     const buildTable = (rows: any[], round: 'prelim' | 'final') => {
@@ -99,7 +99,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
                   <td style="padding:5px 8px;text-align:center">${emptyBox(a.j3)}</td>
                   <td style="padding:5px 8px;text-align:center">${emptyBox(a.j4)}</td>
                   <td style="padding:5px 8px;text-align:center;background:#fafafa">
-                    ${a.totalFmt ? `<span style="font-size:13px;font-weight:900;color:#000">${a.totalFmt}</span>` : `<span style="${boxStyle};width:54px"></span>`}
+                    ${a.totalFmt ? `<span style="font-size:13px;font-weight:900;color:#000">${a.totalFmt}</span>` : `<span style="width:54px;height:22px;border:2px solid #000;border-radius:2px;display:inline-block"></span>`}
                   </td>
                   <td style="padding:5px 8px;text-align:center;font-size:14px">
                     ${medal || (rank ? `<span style="font-weight:700;color:${isTop4 ? '#16a34a' : '#333'}">${rank}</span>` : '')}
