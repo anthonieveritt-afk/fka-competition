@@ -208,11 +208,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       }
 
       // ── Compose the full sheet for this chunk ──
-      const isLastChunk = c === numChunks - 1;
       chunkSections.push(`
-        <div style="page-break-after:${isLastChunk ? 'avoid' : 'always'}">
+        <div style="${c > 0 ? 'page-break-before:always;' : ''}">
           <!-- Sheet header -->
-          <div style="background:#1A1A8C;color:#fff;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;border-radius:2px">
+          <div style="background:#1A1A8C;color:#fff;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;border-radius:2px;page-break-inside:avoid;page-break-after:avoid">
             <div>
               <div style="font-size:13px;font-weight:900;letter-spacing:0.3px">${category.name}${poolLabel}</div>
               <div style="font-size:9px;opacity:0.8;margin-top:1px">${event.name} · ${event.location} · ${event.date} · ${disciplineLabel[category.discipline] ?? category.discipline}</div>
@@ -392,9 +391,9 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       ).join('');
 
       chunkSections.push(`
-        <div style="page-break-after:avoid">
+        <div style="page-break-before:always">
           <!-- Finals sheet header -->
-          <div style="background:#1A1A8C;color:#fff;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-radius:2px">
+          <div style="background:#1A1A8C;color:#fff;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-radius:2px;page-break-inside:avoid;page-break-after:avoid">
             <div>
               <div style="font-size:13px;font-weight:900;letter-spacing:0.3px">${category.name} — Finals</div>
               <div style="font-size:9px;opacity:0.8;margin-top:1px">${event.name} · ${event.location} · ${event.date} · ${disciplineLabel[category.discipline] ?? category.discipline}</div>
