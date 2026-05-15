@@ -65,7 +65,15 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
       }).sort((a, b) => b.total - a.total);
 
     const boxStyle = 'width:44px;height:22px;border:2px solid #000;border-radius:2px;display:inline-block;text-align:center;font-size:11px;font-weight:700;line-height:22px;color:#000';
+    const totalBoxStyle = 'width:54px;height:22px;border:2px solid #000;border-radius:2px;display:inline-block';
+    const writeLineStyle = 'display:inline-block;border-bottom:1.5px solid #555;min-width:140px;height:14px';
     const emptyBox = (val: any) => val != null ? `<span style="${boxStyle}">${Number(val).toFixed(1)}</span>` : `<span style="${boxStyle}"></span>`;
+
+    // 4 fully blank rows for the finals when no results yet
+    const blankFinalRows = Array.from({ length: 4 }, () => ({
+      id: -1, first_name: '', surname: '', club: '',
+      j1: null, j2: null, j3: null, j4: null, total: 0, totalFmt: ''
+    }));
 
     const buildTable = (rows: any[], round: 'prelim' | 'final') => {
       if (rows.length === 0) return '<p style="color:#aaa;font-size:11px;padding:8px">No athletes.</p>';
@@ -92,14 +100,14 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
               return `
                 <tr style="border-bottom:1px solid #ddd;background:${isTop4 ? '#f0fff4' : '#fff'}">
                   <td style="padding:5px 8px;font-size:10px;color:#999;text-align:center">${i + 1}</td>
-                  <td style="padding:5px 8px;font-size:12px;font-weight:700;color:#000">${fmt(a)}</td>
-                  <td style="padding:5px 8px;font-size:10px;color:#555">${a.club}</td>
+                  <td style="padding:5px 8px;font-size:12px;font-weight:700;color:#000">${fmt(a).trim() ? fmt(a) : `<span style="${writeLineStyle}"></span>`}</td>
+                  <td style="padding:5px 8px;font-size:10px;color:#555">${a.club || `<span style="${writeLineStyle};min-width:80px"></span>`}</td>
                   <td style="padding:5px 8px;text-align:center">${emptyBox(a.j1)}</td>
                   <td style="padding:5px 8px;text-align:center">${emptyBox(a.j2)}</td>
                   <td style="padding:5px 8px;text-align:center">${emptyBox(a.j3)}</td>
                   <td style="padding:5px 8px;text-align:center">${emptyBox(a.j4)}</td>
                   <td style="padding:5px 8px;text-align:center;background:#fafafa">
-                    ${a.totalFmt ? `<span style="font-size:13px;font-weight:900;color:#000">${a.totalFmt}</span>` : `<span style="width:54px;height:22px;border:2px solid #000;border-radius:2px;display:inline-block"></span>`}
+                    ${a.totalFmt ? `<span style="font-size:13px;font-weight:900;color:#000">${a.totalFmt}</span>` : `<span style="${totalBoxStyle}"></span>`}
                   </td>
                   <td style="padding:5px 8px;text-align:center;font-size:14px">
                     ${medal || (rank ? `<span style="font-weight:700;color:${isTop4 ? '#16a34a' : '#333'}">${rank}</span>` : '')}
@@ -166,7 +174,7 @@ body{background:#fff;color:#000;padding:8mm}
     <span>FINAL ROUND — TOP 4</span>
     <span style="font-size:9px;font-weight:400;opacity:0.7">Same scoring rules · Highest total wins</span>
   </div>
-  ${buildTable(finalRows.length > 0 ? finalRows : athletes.slice(0, 4).map(a => ({ ...a, j1: null, j2: null, j3: null, j4: null, total: 0, totalFmt: '' })), 'final')}
+  ${buildTable(finalRows.length > 0 ? finalRows : blankFinalRows, 'final')}
 </div>
 
 <!-- Results summary -->
